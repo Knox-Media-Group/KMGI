@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Rules - KMGI Radio Automation{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Rotation Rules</h1>
+    <p>Manage scheduling and rotation rules</p>
+</div>
+
+{% if errors %}
+<div class="alert alert-warning">
+    <h4>Validation Errors</h4>
+    <ul>
+        {% for error in errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<div class="rules-grid">
+    <div class="card">
+        <h3>Settings</h3>
+        <table class="data-table">
+            <tr>
+                <td>Song Separation</td>
+                <td><strong>{{ rules.settings.song_separation or 180 }} minutes</strong></td>
+            </tr>
+            <tr>
+                <td>Artist Separation</td>
+                <td><strong>{{ rules.settings.artist_separation or 60 }} minutes</strong></td>
+            </tr>
+            <tr>
+                <td>Title Separation</td>
+                <td><strong>{{ rules.settings.title_separation or 120 }} minutes</strong></td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>Rule Summary</h3>
+        <table class="data-table">
+            <tr>
+                <td>Hourly Rules</td>
+                <td><strong>{{ summary.hourly_rules_count }}</strong></td>
+            </tr>
+            <tr>
+                <td>Special Rules</td>
+                <td><strong>{{ summary.special_rules_count }}</strong></td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Hourly Rules</h3>
+    <div class="hourly-rules">
+        {% for rule_set in rules.hourly_rules or [] %}
+        <div class="rule-block">
+            <h4>{{ rule_set.name }} (Hours: {{ rule_set.hours|join(', ') }})</h4>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Percentage</th>
+                        <th>Tempo</th>
+                        <th>Mood</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rule in rule_set.rules %}
+                    <tr>
+                        <td>{{ rule.category }}</td>
+                        <td>{{ rule.percentage }}%</td>
+                        <td>{{ rule.tempo|join(', ') if rule.tempo else 'Any' }}</td>
+                        <td>{{ rule.mood|join(', ') if rule.mood else 'Any' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {% if rule_set.restrictions %}
+            <h5>Restrictions</h5>
+            <ul>
+                {% for restriction in rule_set.restrictions %}
+                <li>{{ restriction.reason }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="card">
+    <h3>Gender Rules</h3>
+    <p>Max consecutive same gender: <strong>{{ rules.gender_rules.max_consecutive_same_gender or 3 }}</strong></p>
+
+    {% if rules.gender_rules.hourly_targets %}
+    <h4>Hourly Targets</h4>
+    <table class="data-table">
+        {% for gender, target in rules.gender_rules.hourly_targets.items() %}
+        <tr>
+            <td>{{ gender }}</td>
+            <td>{{ target }}%</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3>Tempo Rules</h3>
+    <table class="data-table">
+        <tr>
+            <td>Max Consecutive Slow</td>
+            <td><strong>{{ rules.tempo_rules.max_consecutive_slow or 2 }}</strong></td>
+        </tr>
+        <tr>
+            <td>Max Consecutive Fast</td>
+            <td><strong>{{ rules.tempo_rules.max_consecutive_fast or 3 }}</strong></td>
+        </tr>
+    </table>
+</div>
+
+<div class="card">
+    <h3>Genre Rules</h3>
+    <p>Same genre separation: <strong>{{ rules.genre_rules.same_genre_separation or 2 }} songs</strong></p>
+
+    {% if rules.genre_rules.hourly_limits %}
+    <h4>Hourly Limits</h4>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Genre</th>
+                <th>Max Per Hour</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for limit in rules.genre_rules.hourly_limits %}
+            <tr>
+                <td>{{ limit.genre }}</td>
+                <td>{{ limit.max_per_hour }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3>Edit Rules</h3>
+    <p>To edit rules, modify the <code>config/rules.yaml</code> file directly.</p>
+    <p>After editing, the rules will be automatically reloaded.</p>
+    <button class="btn btn-primary" onclick="location.reload()">Reload Rules</button>
+</div>
+{% endblock %}

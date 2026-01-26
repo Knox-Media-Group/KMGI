@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Library - KMGI Radio Automation{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Music Library</h1>
+    <p>{{ total }} songs in library</p>
+</div>
+
+<div class="toolbar">
+    <form method="get" class="search-form">
+        <input type="text" name="search" placeholder="Search songs..." value="{{ search }}" class="search-input">
+        <select name="category" class="filter-select">
+            <option value="">All Categories</option>
+            {% for cat in categories %}
+            <option value="{{ cat.name }}" {% if selected_category == cat.name %}selected{% endif %}>{{ cat.name }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+</div>
+
+<div class="table-responsive">
+    <table class="data-table full-width">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Artist</th>
+                <th>Category</th>
+                <th>Genre</th>
+                <th>Tempo</th>
+                <th>Gender</th>
+                <th>Mood</th>
+                <th>Plays</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for song in songs %}
+            <tr>
+                <td><a href="{{ url_for('song_detail', song_id=song.id) }}">{{ song.title }}</a></td>
+                <td>{{ song.artist }}</td>
+                <td><span class="badge badge-category">{{ song.category or '-' }}</span></td>
+                <td>{{ song.genre or '-' }}</td>
+                <td>{{ song.tempo or '-' }}</td>
+                <td>{{ song.gender or '-' }}</td>
+                <td>{{ song.mood or '-' }}</td>
+                <td>{{ song.play_count }}</td>
+                <td>
+                    <button class="btn btn-sm" onclick="editSong({{ song.id }})">Edit</button>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="9" class="text-center">No songs found</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="pagination">
+    {% if page > 1 %}
+    <a href="?page={{ page - 1 }}&search={{ search }}&category={{ selected_category }}" class="btn">Previous</a>
+    {% endif %}
+
+    <span>Page {{ page }} of {{ ((total / per_page)|round(0, 'ceil'))|int or 1 }}</span>
+
+    {% if page * per_page < total %}
+    <a href="?page={{ page + 1 }}&search={{ search }}&category={{ selected_category }}" class="btn">Next</a>
+    {% endif %}
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>Edit Song</h2>
+        <form id="editForm">
+            <input type="hidden" id="edit_song_id">
+
+            <div class="form-group">
+                <label>Category</label>
+                <select id="edit_category">
+                    {% for cat in categories %}
+                    <option value="{{ cat.name }}">{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Genre</label>
+                <input type="text" id="edit_genre">
+            </div>
+
+            <div class="form-group">
+                <label>Tempo</label>
+                <select id="edit_tempo">
+                    <option value="Slow">Slow</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Fast">Fast</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Gender</label>
+                <select id="edit_gender">
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Group">Group</option>
+                    <option value="Mixed">Mixed</option>
+                    <option value="Instrumental">Instrumental</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Mood</label>
+                <input type="text" id="edit_mood">
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="edit_explicit"> Explicit Content
+                </label>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="edit_active" checked> Active in Rotation
+                </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function editSong(songId) {
+    document.getElementById('edit_song_id').value = songId;
+    document.getElementById('editModal').style.display = 'block';
+}
+
+function closeModal() {
+    document.getElementById('editModal').style.display = 'none';
+}
+
+document.getElementById('editForm').onsubmit = function(e) {
+    e.preventDefault();
+    const songId = document.getElementById('edit_song_id').value;
+    const data = {
+        category: document.getElementById('edit_category').value,
+        genre: document.getElementById('edit_genre').value,
+        tempo: document.getElementById('edit_tempo').value,
+        gender: document.getElementById('edit_gender').value,
+        mood: document.getElementById('edit_mood').value,
+        explicit: document.getElementById('edit_explicit').checked,
+        is_active: document.getElementById('edit_active').checked
+    };
+
+    fetch(`/api/song/${songId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(data => {
+        alert(data.message);
+        location.reload();
+    });
+};
+</script>
+{% endblock %}

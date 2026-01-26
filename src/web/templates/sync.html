@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}OP-X Sync - KMGI Radio Automation{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>OP-X Synchronization</h1>
+    <p>Sync music library with OP-X radio automation</p>
+</div>
+
+<div class="card">
+    <h3>Sync Status</h3>
+    {% if sync_status %}
+    <table class="data-table">
+        <tr>
+            <td>Songs synced</td>
+            <td><strong>{{ sync_status.sync_ok or 0 }}</strong></td>
+        </tr>
+        <tr>
+            <td>Missing in OP-X</td>
+            <td><strong class="{% if sync_status.missing_in_opx %}text-warning{% endif %}">
+                {{ sync_status.missing_in_opx|length if sync_status.missing_in_opx else 0 }}
+            </strong></td>
+        </tr>
+        <tr>
+            <td>Missing in KMGI</td>
+            <td><strong class="{% if sync_status.missing_in_kmgi %}text-warning{% endif %}">
+                {{ sync_status.missing_in_kmgi|length if sync_status.missing_in_kmgi else 0 }}
+            </strong></td>
+        </tr>
+    </table>
+    {% else %}
+    <p class="text-muted">OP-X database not configured. Set the path in config/config.yaml</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3>Sync Actions</h3>
+    <div class="button-group">
+        <button class="btn btn-primary" onclick="syncToOpx()">Sync to OP-X</button>
+        <button class="btn btn-secondary" onclick="syncFromOpx()">Import from OP-X</button>
+    </div>
+
+    <div id="syncResult" style="display: none; margin-top: 20px;"></div>
+</div>
+
+<div class="card">
+    <h3>Export/Import</h3>
+    <p>Export library to XML format for manual import into OP-X:</p>
+    <button class="btn" onclick="exportXml()">Export to XML</button>
+
+    <hr>
+
+    <p>Import from OP-X XML export:</p>
+    <form onsubmit="importXml(event)">
+        <input type="text" id="xmlPath" placeholder="Path to XML file..." class="form-control" style="width: 70%; display: inline-block;">
+        <button type="submit" class="btn">Import</button>
+    </form>
+</div>
+
+{% if sync_status.missing_in_opx and sync_status.missing_in_opx|length > 0 %}
+<div class="card">
+    <h3>Songs Missing in OP-X</h3>
+    <p>These songs are in KMGI but not in OP-X:</p>
+    <ul class="file-list">
+        {% for path in sync_status.missing_in_opx[:20] %}
+        <li>{{ path }}</li>
+        {% endfor %}
+        {% if sync_status.missing_in_opx|length > 20 %}
+        <li>... and {{ sync_status.missing_in_opx|length - 20 }} more</li>
+        {% endif %}
+    </ul>
+</div>
+{% endif %}
+
+<script>
+function syncToOpx() {
+    document.getElementById('syncResult').innerHTML = '<p>Syncing to OP-X...</p>';
+    document.getElementById('syncResult').style.display = 'block';
+
+    fetch('/api/sync/to-opx', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('syncResult').innerHTML = `
+                <div class="alert alert-success">
+                    <strong>Sync Complete</strong><br>
+                    Added: ${data.stats.added}<br>
+                    Updated: ${data.stats.updated}<br>
+                    Errors: ${data.stats.errors}
+                </div>
+            `;
+        })
+        .catch(err => {
+            document.getElementById('syncResult').innerHTML = '<div class="alert alert-danger">Sync failed</div>';
+        });
+}
+
+function syncFromOpx() {
+    document.getElementById('syncResult').innerHTML = '<p>Importing from OP-X...</p>';
+    document.getElementById('syncResult').style.display = 'block';
+
+    fetch('/api/sync/from-opx', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('syncResult').innerHTML = `
+                <div class="alert alert-success">
+                    <strong>Import Complete</strong><br>
+                    Added: ${data.stats.added}<br>
+                    Updated: ${data.stats.updated}<br>
+                    Errors: ${data.stats.errors}
+                </div>
+            `;
+        })
+        .catch(err => {
+            document.getElementById('syncResult').innerHTML = '<div class="alert alert-danger">Import failed</div>';
+        });
+}
+
+function exportXml() {
+    alert('XML export will be saved to the reports folder');
+}
+
+function importXml(e) {
+    e.preventDefault();
+    alert('XML import feature - coming soon');
+}
+</script>
+{% endblock %}

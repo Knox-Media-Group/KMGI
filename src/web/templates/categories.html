@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Categories - KMGI Radio Automation{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Rotation Categories</h1>
+    <p>Manage category definitions and song assignments</p>
+</div>
+
+<div class="categories-grid">
+    {% for category in categories %}
+    <div class="category-card" style="border-left: 4px solid {{ category.color or '#666' }}">
+        <h3>{{ category.name }}</h3>
+        <p class="category-code">{{ category.code }}</p>
+        <p>{{ category.description }}</p>
+
+        <div class="category-stats">
+            <div class="stat">
+                <span class="stat-value">{{ stats.get(category.name, 0) }}</span>
+                <span class="stat-label">Songs</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value">{{ category.min_rest_minutes or 180 }}</span>
+                <span class="stat-label">Min Rest (min)</span>
+            </div>
+        </div>
+
+        <div class="category-actions">
+            <a href="{{ url_for('library') }}?category={{ category.name }}" class="btn btn-sm">View Songs</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="card">
+    <h3>Category Flow Guide</h3>
+    <div class="flow-diagram">
+        <div class="flow-item">
+            <strong>Current</strong>
+            <p>New releases in heavy rotation (0-60 days)</p>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-item">
+            <strong>Recurrent</strong>
+            <p>Recent hits moving out (60-180 days)</p>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-item">
+            <strong>Power Gold</strong>
+            <p>All-time hits with high familiarity</p>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-item">
+            <strong>Gold</strong>
+            <p>Classic catalog hits</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

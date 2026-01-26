@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - KMGI Radio Automation{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Dashboard</h1>
+    <p>System overview and quick statistics</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.total_plays or 0 }}</div>
+        <div class="stat-label">Plays (24h)</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.unique_songs or 0 }}</div>
+        <div class="stat-label">Unique Songs</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.unique_artists or 0 }}</div>
+        <div class="stat-label">Unique Artists</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.plays_per_hour or 0 }}</div>
+        <div class="stat-label">Plays/Hour</div>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="card">
+        <h3>Library Overview</h3>
+        <table class="data-table">
+            <tr>
+                <td>Total Songs</td>
+                <td><strong>{{ library_stats.total_songs or 0 }}</strong></td>
+            </tr>
+            <tr>
+                <td>Active Songs</td>
+                <td><strong>{{ library_stats.active_songs or 0 }}</strong></td>
+            </tr>
+        </table>
+
+        <h4>By Category</h4>
+        <table class="data-table">
+            {% for category, count in (library_stats.by_category or {}).items() %}
+            <tr>
+                <td>{{ category or 'Uncategorized' }}</td>
+                <td><strong>{{ count }}</strong></td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <div class="card">
+        <h3>Category Distribution (24h)</h3>
+        {% if stats.categories %}
+        <div class="category-bars">
+            {% set total = stats.total_plays or 1 %}
+            {% for cat, count in stats.categories.items() %}
+            <div class="category-bar">
+                <span class="bar-label">{{ cat }}</span>
+                <div class="bar-container">
+                    <div class="bar-fill" style="width: {{ (count / total * 100)|round }}%"></div>
+                </div>
+                <span class="bar-value">{{ count }} ({{ ((count / total) * 100)|round(1) }}%)</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted">No play data available</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h3>Watcher Status</h3>
+        <div class="status-indicator {% if watcher_status.watching %}status-active{% else %}status-inactive{% endif %}">
+            {{ 'Active' if watcher_status.watching else 'Stopped' }}
+        </div>
+        <p>Watch Path: <code>{{ watcher_status.watch_path }}</code></p>
+        <p>Queue Size: {{ watcher_status.queue_size }}</p>
+
+        <div class="button-group">
+            {% if watcher_status.watching %}
+            <button class="btn btn-danger" onclick="stopWatcher()">Stop Watcher</button>
+            {% else %}
+            <button class="btn btn-success" onclick="startWatcher()">Start Watcher</button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Quick Actions</h3>
+        <div class="action-list">
+            <a href="{{ url_for('library') }}" class="action-item">
+                <span class="action-icon">📚</span>
+                <span>Browse Library</span>
+            </a>
+            <a href="{{ url_for('rules') }}" class="action-item">
+                <span class="action-icon">📋</span>
+                <span>Manage Rules</span>
+            </a>
+            <a href="#" class="action-item" onclick="generateAudit()">
+                <span class="action-icon">📊</span>
+                <span>Generate Report</span>
+            </a>
+            <a href="{{ url_for('sync_page') }}" class="action-item">
+                <span class="action-icon">🔄</span>
+                <span>Sync with OP-X</span>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+function startWatcher() {
+    fetch('/api/watcher/start', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            alert(data.message);
+            location.reload();
+        });
+}
+
+function stopWatcher() {
+    fetch('/api/watcher/stop', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            alert(data.message);
+            location.reload();
+        });
+}
+
+function generateAudit() {
+    fetch('/api/audit/generate', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            alert('Report generated! Check the Audit page for details.');
+        });
+}
+</script>
+{% endblock %}

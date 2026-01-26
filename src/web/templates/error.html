@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Error - KMGI Radio Automation{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <h1>Oops!</h1>
+    <p>{{ error }}</p>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Return to Dashboard</a>
+</div>
+{% endblock %}

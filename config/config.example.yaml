@@ -1,0 +1,176 @@
+# KMGI Radio Music Automation Configuration
+
+# Paths
+paths:
+  # Main music library root
+  music_library: "/path/to/music/library"
+
+  # Nurpe download folder to watch
+  nurpe_downloads: "/path/to/nurpe/downloads"
+
+  # OP-X database location
+  opx_database: "/path/to/opx/database.mdb"
+
+  # Local application database
+  app_database: "data/kmgi.db"
+
+  # Log files
+  logs: "logs/"
+
+# Music Organization Structure
+organization:
+  # Root folder for organized music
+  root: "/path/to/organized/music"
+
+  # Folder structure template
+  # Available variables: {genre}, {mood}, {tempo}, {category}, {gender}, {artist}, {year}
+  structure: "{category}/{genre}/{artist}"
+
+  # File naming template
+  filename: "{artist} - {title}"
+
+# Category Definitions
+categories:
+  rotation:
+    - name: "Current"
+      code: "CUR"
+      description: "New releases in heavy rotation"
+      max_age_days: 60
+
+    - name: "Recurrent"
+      code: "REC"
+      description: "Recent hits moving out of current"
+      max_age_days: 180
+
+    - name: "Power Gold"
+      code: "PWG"
+      description: "All-time hits with high familiarity"
+
+    - name: "Gold"
+      code: "GLD"
+      description: "Classic hits"
+
+    - name: "Deep Cut"
+      code: "DPC"
+      description: "Album tracks and lesser-known songs"
+
+  genres:
+    - Pop
+    - Rock
+    - R&B
+    - Hip-Hop
+    - Country
+    - Electronic
+    - Jazz
+    - Classical
+    - Latin
+    - Reggae
+    - Alternative
+    - Indie
+
+  moods:
+    - Happy
+    - Sad
+    - Energetic
+    - Calm
+    - Romantic
+    - Angry
+    - Melancholic
+    - Uplifting
+    - Dark
+    - Peaceful
+
+  tempos:
+    - name: "Slow"
+      min_bpm: 0
+      max_bpm: 80
+    - name: "Medium"
+      min_bpm: 80
+      max_bpm: 120
+    - name: "Fast"
+      min_bpm: 120
+      max_bpm: 999
+
+  genders:
+    - Male
+    - Female
+    - Group
+    - Mixed
+    - Instrumental
+
+# OP-X Integration Settings
+opx:
+  # OP-X version (affects database schema)
+  version: "3.0"
+
+  # Auto-sync interval in minutes (0 to disable)
+  sync_interval: 30
+
+  # Fields to sync
+  sync_fields:
+    - title
+    - artist
+    - genre
+    - category
+    - tempo
+    - mood
+    - gender
+    - intro
+    - outro
+    - duration
+
+# Nurpe Watcher Settings
+nurpe:
+  # Enable automatic watching
+  enabled: true
+
+  # File extensions to process
+  extensions:
+    - .mp3
+    - .wav
+    - .flac
+    - .m4a
+
+  # Auto-categorize new files
+  auto_categorize: true
+
+  # Move files after processing (false = copy)
+  move_files: true
+
+  # Quarantine folder for files that fail processing
+  quarantine: "quarantine/"
+
+# Audit Settings
+audit:
+  # Enable weekly audit reports
+  enabled: true
+
+  # Day of week for audit (0=Monday, 6=Sunday)
+  audit_day: 0
+
+  # Email reports
+  email:
+    enabled: false
+    smtp_server: "smtp.example.com"
+    smtp_port: 587
+    from_address: "automation@station.com"
+    to_addresses:
+      - "pd@station.com"
+
+  # Report output folder
+  reports_folder: "reports/"
+
+# Web Dashboard
+web:
+  host: "0.0.0.0"
+  port: 5000
+  debug: false
+  secret_key: "change-this-to-a-secure-key"
+
+# Logging
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/kmgi.log"
+  max_size_mb: 10
+  backup_count: 5

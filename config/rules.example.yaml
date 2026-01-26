@@ -1,0 +1,206 @@
+# KMGI Rotation Rules Configuration
+# These rules control how songs are scheduled and played
+
+# Global Settings
+settings:
+  # Minimum time before a song can repeat (in minutes)
+  song_separation: 180
+
+  # Minimum time before same artist can repeat (in minutes)
+  artist_separation: 60
+
+  # Minimum time before same title (cover versions) can repeat
+  title_separation: 120
+
+# Hour-by-Hour Rules
+# Define what categories should play during each hour
+hourly_rules:
+  # Morning Drive (6 AM - 10 AM)
+  - hours: [6, 7, 8, 9]
+    name: "Morning Drive"
+    rules:
+      - category: "Current"
+        percentage: 40
+        tempo: ["Medium", "Fast"]
+        mood: ["Happy", "Energetic", "Uplifting"]
+      - category: "Power Gold"
+        percentage: 30
+        tempo: ["Medium", "Fast"]
+      - category: "Recurrent"
+        percentage: 20
+      - category: "Gold"
+        percentage: 10
+    restrictions:
+      - mood: ["Sad", "Melancholic"]
+        action: "avoid"
+        reason: "Keep morning energy positive"
+
+  # Midday (10 AM - 3 PM)
+  - hours: [10, 11, 12, 13, 14]
+    name: "Midday"
+    rules:
+      - category: "Current"
+        percentage: 35
+      - category: "Recurrent"
+        percentage: 25
+      - category: "Power Gold"
+        percentage: 25
+      - category: "Gold"
+        percentage: 15
+
+  # Afternoon Drive (3 PM - 7 PM)
+  - hours: [15, 16, 17, 18]
+    name: "Afternoon Drive"
+    rules:
+      - category: "Current"
+        percentage: 45
+        tempo: ["Medium", "Fast"]
+      - category: "Power Gold"
+        percentage: 30
+      - category: "Recurrent"
+        percentage: 15
+      - category: "Gold"
+        percentage: 10
+    restrictions:
+      - tempo: ["Slow"]
+        max_per_hour: 2
+        reason: "Limit slow songs during drive time"
+
+  # Evening (7 PM - 12 AM)
+  - hours: [19, 20, 21, 22, 23]
+    name: "Evening"
+    rules:
+      - category: "Current"
+        percentage: 30
+      - category: "Gold"
+        percentage: 30
+      - category: "Power Gold"
+        percentage: 20
+      - category: "Deep Cut"
+        percentage: 10
+      - category: "Recurrent"
+        percentage: 10
+
+  # Overnight (12 AM - 6 AM)
+  - hours: [0, 1, 2, 3, 4, 5]
+    name: "Overnight"
+    rules:
+      - category: "Gold"
+        percentage: 40
+      - category: "Deep Cut"
+        percentage: 25
+      - category: "Power Gold"
+        percentage: 20
+      - category: "Current"
+        percentage: 15
+
+# Gender Balance Rules
+gender_rules:
+  # Maximum consecutive songs by same gender
+  max_consecutive_same_gender: 3
+
+  # Target balance per hour
+  hourly_targets:
+    Male: 40
+    Female: 40
+    Group: 15
+    Mixed: 5
+
+# Tempo Flow Rules
+tempo_rules:
+  # Prevent too many slow songs in a row
+  max_consecutive_slow: 2
+
+  # Prevent too many fast songs in a row
+  max_consecutive_fast: 3
+
+  # Ideal tempo flow pattern (soft guideline)
+  preferred_flow:
+    - "Medium"
+    - "Fast"
+    - "Medium"
+    - "Slow"
+
+# Genre Mixing Rules
+genre_rules:
+  # Prevent same genre back-to-back
+  same_genre_separation: 2  # songs
+
+  # Genre limits per hour
+  hourly_limits:
+    - genre: "Hip-Hop"
+      max_per_hour: 4
+    - genre: "Country"
+      max_per_hour: 3
+    - genre: "Electronic"
+      max_per_hour: 3
+
+# Special Rules
+special_rules:
+  # New music protection - ensure new songs get airplay
+  new_music:
+    enabled: true
+    # Songs added in last N days
+    days: 14
+    # Minimum plays per day
+    min_daily_plays: 3
+
+  # Power rotation - songs that must play frequently
+  power_rotation:
+    enabled: true
+    # Maximum time between plays
+    max_rest_hours: 4
+
+  # Dayparting exceptions
+  dayparting:
+    - name: "No explicit content"
+      hours: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+      condition:
+        explicit: false
+
+    - name: "Weekend party mix"
+      days: [5, 6]  # Saturday, Sunday
+      hours: [20, 21, 22, 23]
+      boost:
+        tempo: ["Fast"]
+        mood: ["Energetic", "Happy"]
+        multiplier: 1.5
+
+# Validation Rules
+validation:
+  # Required metadata fields for a song to be scheduled
+  required_fields:
+    - title
+    - artist
+    - duration
+    - category
+
+  # Duration limits
+  min_duration_seconds: 60
+  max_duration_seconds: 480
+
+  # Audio quality requirements
+  min_bitrate: 192
+  allowed_formats:
+    - mp3
+    - wav
+    - flac
+
+# Alert Rules
+alerts:
+  # Alert when category has too few songs
+  low_inventory:
+    enabled: true
+    thresholds:
+      Current: 20
+      Recurrent: 30
+      Power Gold: 50
+
+  # Alert when song hasn't played in expected time
+  stale_songs:
+    enabled: true
+    # Hours without play to trigger alert
+    threshold_hours: 48
+    categories:
+      - Current
+      - Power Gold
