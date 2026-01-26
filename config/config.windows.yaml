@@ -1,0 +1,212 @@
+# KMGI Radio Automation - Windows Configuration for OP-X
+# Copy this to config.yaml and update the paths for your system
+
+# =============================================================================
+# FILE PATHS - UPDATE THESE FOR YOUR SYSTEM
+# =============================================================================
+
+paths:
+  # Where your organized music library will be stored
+  # This should be the folder OP-X reads music from
+  music_library: "C:\\Radio\\Music"
+
+  # Where Nurpe downloads new music to
+  # KMGI will watch this folder and auto-process new files
+  nurpe_downloads: "C:\\Users\\Radio\\Downloads\\Nurpe"
+
+  # Quarantine folder for files that fail processing
+  quarantine: "C:\\Radio\\Quarantine"
+
+  # KMGI's internal database (not OP-X)
+  app_database: "C:\\KMGI\\data\\kmgi.db"
+
+# =============================================================================
+# OP-X INTEGRATION
+# =============================================================================
+
+opx:
+  # Path to your OP-X database file
+  # Common locations:
+  #   - C:\OP-X\Data\Library.mdb
+  #   - C:\Program Files\OP-X\Data\Library.mdb
+  #   - C:\ProgramData\OP-X\Library.mdb
+  database: "C:\\OP-X\\Data\\Library.mdb"
+
+  # OP-X version (affects field mappings)
+  version: "3.0"
+
+  # Which fields to sync between KMGI and OP-X
+  sync_fields:
+    - title
+    - artist
+    - album
+    - genre
+    - category
+    - tempo
+    - tempo_bpm
+    - intro_seconds
+    - outro_seconds
+    - gender
+    - mood
+    - explicit
+
+  # Table name in OP-X database (usually "Library" or "Songs")
+  library_table: "Library"
+
+# =============================================================================
+# NURPE WATCHER SETTINGS
+# =============================================================================
+
+nurpe:
+  # Folder to watch for new downloads
+  downloads: "C:\\Users\\Radio\\Downloads\\Nurpe"
+
+  # File extensions to process
+  extensions:
+    - .mp3
+    - .wav
+    - .flac
+    - .m4a
+
+  # Automatically analyze and categorize new files
+  auto_categorize: true
+
+  # Move files to organized library (vs. copy)
+  move_files: true
+
+  # Quarantine folder for problem files
+  quarantine: "C:\\Radio\\Quarantine"
+
+# =============================================================================
+# FILE ORGANIZATION
+# =============================================================================
+
+organization:
+  # Root folder for organized music
+  root: "C:\\Radio\\Music"
+
+  # Folder structure template
+  # Available variables: {category}, {genre}, {artist}, {album}, {year}, {mood}, {tempo}, {gender}
+  structure: "{category}\\{genre}\\{artist}"
+
+  # Filename template
+  filename: "{artist} - {title}"
+
+# =============================================================================
+# ROTATION CATEGORIES
+# =============================================================================
+
+categories:
+  # Category definitions with rotation priorities
+  Current:
+    code: "CUR"
+    color: "#FF6B6B"
+    priority: 100
+    description: "New releases in heavy rotation"
+
+  Recurrent:
+    code: "REC"
+    color: "#4ECDC4"
+    priority: 80
+    description: "Recent hits transitioning from Current"
+
+  Power Gold:
+    code: "PWG"
+    color: "#FFE66D"
+    priority: 60
+    description: "All-time hits with high familiarity"
+
+  Gold:
+    code: "GLD"
+    color: "#95E1D3"
+    priority: 40
+    description: "Classic hits"
+
+  Deep Cut:
+    code: "DPC"
+    color: "#A8D8EA"
+    priority: 20
+    description: "Album tracks and lesser-known songs"
+
+# =============================================================================
+# AUDIO ANALYSIS
+# =============================================================================
+
+analysis:
+  # Enable audio analysis for tempo, mood, etc.
+  enabled: true
+
+  # Confidence threshold (0.0 - 1.0)
+  # Songs below this will be flagged for manual review
+  min_confidence: 0.5
+
+  # Re-analyze songs older than this many days
+  reanalyze_days: 90
+
+# =============================================================================
+# WEB DASHBOARD
+# =============================================================================
+
+web:
+  # Host to bind to (0.0.0.0 = all interfaces)
+  host: "0.0.0.0"
+
+  # Port for web dashboard
+  port: 5000
+
+  # Enable debug mode (disable in production)
+  debug: false
+
+  # Secret key for sessions (change this!)
+  secret_key: "change-this-to-a-random-string-in-production"
+
+# =============================================================================
+# AUDIT & REPORTING
+# =============================================================================
+
+audit:
+  # Folder for audit reports
+  reports_folder: "C:\\KMGI\\reports"
+
+  # Auto-generate weekly reports
+  auto_weekly_report: true
+
+  # Day to generate weekly report (0=Monday, 6=Sunday)
+  weekly_report_day: 0
+
+  # Email reports (optional)
+  email:
+    enabled: false
+    smtp_server: ""
+    smtp_port: 587
+    username: ""
+    password: ""
+    from_address: ""
+    to_addresses: []
+
+# =============================================================================
+# LOGGING
+# =============================================================================
+
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR
+  level: "INFO"
+
+  # Log file path
+  file: "C:\\KMGI\\logs\\kmgi.log"
+
+  # Log format
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+  # Max log file size in MB
+  max_size_mb: 10
+
+  # Number of backup log files to keep
+  backup_count: 5
+
+# =============================================================================
+# RULES FILE
+# =============================================================================
+
+# Path to rotation rules file
+rules_path: "C:\\KMGI\\config\\rules.yaml"
