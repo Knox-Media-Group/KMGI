@@ -1,0 +1,164 @@
+# KMGI Radio Automation - WMXV-HD3 Configuration
+# Install on: DeskTop-0OH2BPL (10.1.10.199)
+
+# =============================================================================
+# FILE PATHS
+# =============================================================================
+
+paths:
+  # Music library on network share
+  # Using UNC path for reliability
+  music_library: "\\\\DeskTop-0OH2BPL\\WMXV-HD3"
+
+  # Nurpe download folder - UPDATE THIS to where you download music
+  # Example: "C:\\Users\\Radio\\Downloads\\Nurpe"
+  # Example: "\\\\DeskTop-0OH2BPL\\WMXV-HD3\\Incoming"
+  nurpe_downloads: "C:\\Users\\Radio\\Downloads\\Nurpe"
+
+  # Quarantine for problem files
+  quarantine: "\\\\DeskTop-0OH2BPL\\WMXV-HD3\\Quarantine"
+
+  # KMGI database (local for speed)
+  app_database: "C:\\KMGI\\data\\kmgi.db"
+
+# =============================================================================
+# OP-X INTEGRATION
+# =============================================================================
+
+opx:
+  # Path to OP-X database - UPDATE THIS to your actual location
+  # Common locations on OP-X server:
+  #   C:\OP-X\Data\Library.mdb
+  #   C:\Program Files\Broadcast Software International\OP-X\Data\Library.mdb
+  #   C:\ProgramData\OP-X\Library.mdb
+  database: "C:\\OP-X\\Data\\Library.mdb"
+
+  version: "3.0"
+  library_table: "Library"
+
+  sync_fields:
+    - title
+    - artist
+    - album
+    - genre
+    - category
+    - tempo
+    - tempo_bpm
+    - intro_seconds
+    - outro_seconds
+    - gender
+    - mood
+    - explicit
+
+# =============================================================================
+# NURPE WATCHER
+# =============================================================================
+
+nurpe:
+  # Folder to watch for new downloads
+  downloads: "C:\\Users\\Radio\\Downloads\\Nurpe"
+
+  extensions:
+    - .mp3
+    - .wav
+    - .flac
+    - .m4a
+
+  auto_categorize: true
+  move_files: true
+  quarantine: "\\\\DeskTop-0OH2BPL\\WMXV-HD3\\Quarantine"
+
+# =============================================================================
+# FILE ORGANIZATION
+# =============================================================================
+
+organization:
+  # Root folder for organized music
+  root: "\\\\DeskTop-0OH2BPL\\WMXV-HD3"
+
+  # Folder structure: Category/Genre/Artist
+  structure: "{category}\\{genre}\\{artist}"
+
+  # Filename format
+  filename: "{artist} - {title}"
+
+# =============================================================================
+# WEB DASHBOARD
+# =============================================================================
+
+web:
+  # Bind to all interfaces so other computers can access
+  host: "0.0.0.0"
+
+  # Port for web dashboard
+  port: 5000
+
+  # Access from other computers: http://10.1.10.199:5000
+
+  debug: false
+  secret_key: "wmxv-hd3-change-this-to-random-string"
+
+# =============================================================================
+# CATEGORIES (matches typical radio rotation)
+# =============================================================================
+
+categories:
+  Current:
+    code: "CUR"
+    color: "#FF6B6B"
+    priority: 100
+    description: "New releases in heavy rotation"
+
+  Recurrent:
+    code: "REC"
+    color: "#4ECDC4"
+    priority: 80
+    description: "Recent hits transitioning from Current"
+
+  Power Gold:
+    code: "PWG"
+    color: "#FFE66D"
+    priority: 60
+    description: "All-time hits with high familiarity"
+
+  Gold:
+    code: "GLD"
+    color: "#95E1D3"
+    priority: 40
+    description: "Classic hits"
+
+  Deep Cut:
+    code: "DPC"
+    color: "#A8D8EA"
+    priority: 20
+    description: "Album tracks and lesser-known songs"
+
+# =============================================================================
+# AUDIO ANALYSIS
+# =============================================================================
+
+analysis:
+  enabled: true
+  min_confidence: 0.5
+  reanalyze_days: 90
+
+# =============================================================================
+# AUDIT & REPORTING
+# =============================================================================
+
+audit:
+  reports_folder: "C:\\KMGI\\reports"
+  auto_weekly_report: true
+  weekly_report_day: 0  # Monday
+
+# =============================================================================
+# LOGGING
+# =============================================================================
+
+logging:
+  level: "INFO"
+  file: "C:\\KMGI\\logs\\kmgi.log"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# Path to rotation rules
+rules_path: "C:\\KMGI\\config\\rules.yaml"
