@@ -1,41 +1,42 @@
 # KMGI Radio Automation - WMXV-HD3 Configuration
-# Install on: DeskTop-0OH2BPL (10.1.10.199)
+# Server: DeskTop-0OH2BPL (10.1.10.199)
+#
+# INSTALL: Copy KMGI folder to C:\KMGI on the server
+# ACCESS: http://10.1.10.199:5000 from any computer on network
 
 # =============================================================================
-# FILE PATHS
+# FILE PATHS - UPDATE THESE
 # =============================================================================
 
 paths:
-  # Music library on network share
-  # Using UNC path for reliability
+  # Your music library location
   music_library: "\\\\DeskTop-0OH2BPL\\WMXV-HD3"
 
-  # Nurpe download folder - UPDATE THIS to where you download music
-  # Example: "C:\\Users\\Radio\\Downloads\\Nurpe"
-  # Example: "\\\\DeskTop-0OH2BPL\\WMXV-HD3\\Incoming"
-  nurpe_downloads: "C:\\Users\\Radio\\Downloads\\Nurpe"
+  # Folder to watch for NEW music downloads
+  # Update this to wherever you download new songs
+  # Example: "C:\\Users\\Radio\\Downloads"
+  # Example: "\\\\DeskTop-0OH2BPL\\WMXV-HD3\\New Music"
+  watch_folder: "C:\\Users\\Radio\\Downloads"
 
-  # Quarantine for problem files
-  quarantine: "\\\\DeskTop-0OH2BPL\\WMXV-HD3\\Quarantine"
+  # Quarantine folder for files that fail processing
+  quarantine: "C:\\KMGI\\quarantine"
 
-  # KMGI database (local for speed)
+  # KMGI internal database
   app_database: "C:\\KMGI\\data\\kmgi.db"
 
 # =============================================================================
-# OP-X INTEGRATION
+# OP-X DATABASE - UPDATE THIS PATH
 # =============================================================================
 
 opx:
-  # Path to OP-X database - UPDATE THIS to your actual location
-  # Common locations on OP-X server:
-  #   C:\OP-X\Data\Library.mdb
-  #   C:\Program Files\Broadcast Software International\OP-X\Data\Library.mdb
-  #   C:\ProgramData\OP-X\Library.mdb
+  # Find your OP-X database: usually Library.mdb
+  # Check OP-X Settings → Database for exact location
   database: "C:\\OP-X\\Data\\Library.mdb"
 
   version: "3.0"
   library_table: "Library"
 
+  # Fields to sync between KMGI and OP-X
   sync_fields:
     - title
     - artist
@@ -51,35 +52,41 @@ opx:
     - explicit
 
 # =============================================================================
-# NURPE WATCHER
+# FILE WATCHER (for new music)
 # =============================================================================
 
 nurpe:
-  # Folder to watch for new downloads
-  downloads: "C:\\Users\\Radio\\Downloads\\Nurpe"
+  # Same as watch_folder above
+  downloads: "C:\\Users\\Radio\\Downloads"
 
+  # File types to process
   extensions:
     - .mp3
     - .wav
     - .flac
     - .m4a
 
+  # Auto-analyze and categorize new files
   auto_categorize: true
+
+  # Move files to organized library (true) or copy (false)
   move_files: true
-  quarantine: "\\\\DeskTop-0OH2BPL\\WMXV-HD3\\Quarantine"
 
 # =============================================================================
 # FILE ORGANIZATION
 # =============================================================================
 
 organization:
-  # Root folder for organized music
+  # Where to organize music
   root: "\\\\DeskTop-0OH2BPL\\WMXV-HD3"
 
-  # Folder structure: Category/Genre/Artist
+  # Folder structure template
+  # {category} = Current, Gold, etc.
+  # {genre} = Pop, Rock, R&B, etc.
+  # {artist} = Artist name
   structure: "{category}\\{genre}\\{artist}"
 
-  # Filename format
+  # How to name files
   filename: "{artist} - {title}"
 
 # =============================================================================
@@ -87,19 +94,19 @@ organization:
 # =============================================================================
 
 web:
-  # Bind to all interfaces so other computers can access
+  # 0.0.0.0 = accessible from any computer on network
   host: "0.0.0.0"
-
-  # Port for web dashboard
   port: 5000
 
-  # Access from other computers: http://10.1.10.199:5000
+  # Access URLs:
+  #   On server:  http://localhost:5000
+  #   On network: http://10.1.10.199:5000
 
   debug: false
-  secret_key: "wmxv-hd3-change-this-to-random-string"
+  secret_key: "wmxv-change-this-to-something-random"
 
 # =============================================================================
-# CATEGORIES (matches typical radio rotation)
+# ROTATION CATEGORIES
 # =============================================================================
 
 categories:
@@ -107,19 +114,19 @@ categories:
     code: "CUR"
     color: "#FF6B6B"
     priority: 100
-    description: "New releases in heavy rotation"
+    description: "New releases - heavy rotation"
 
   Recurrent:
     code: "REC"
     color: "#4ECDC4"
     priority: 80
-    description: "Recent hits transitioning from Current"
+    description: "Recent hits moving down"
 
   Power Gold:
     code: "PWG"
     color: "#FFE66D"
     priority: 60
-    description: "All-time hits with high familiarity"
+    description: "All-time hits"
 
   Gold:
     code: "GLD"
@@ -131,7 +138,7 @@ categories:
     code: "DPC"
     color: "#A8D8EA"
     priority: 20
-    description: "Album tracks and lesser-known songs"
+    description: "Album tracks"
 
 # =============================================================================
 # AUDIO ANALYSIS
@@ -140,7 +147,6 @@ categories:
 analysis:
   enabled: true
   min_confidence: 0.5
-  reanalyze_days: 90
 
 # =============================================================================
 # AUDIT & REPORTING
@@ -158,7 +164,6 @@ audit:
 logging:
   level: "INFO"
   file: "C:\\KMGI\\logs\\kmgi.log"
-  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 # Path to rotation rules
 rules_path: "C:\\KMGI\\config\\rules.yaml"
