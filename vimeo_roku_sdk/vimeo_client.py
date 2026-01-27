@@ -165,8 +165,13 @@ class VimeoClient:
         Returns:
             User data dictionary
         """
-        user_id = user_id or self._user_id or "me"
-        return self._make_request("GET", f"/users/{user_id}")
+        if user_id:
+            return self._make_request("GET", f"/users/{user_id}")
+        elif self._user_id:
+            return self._make_request("GET", f"/users/{self._user_id}")
+        else:
+            # Use /me endpoint for authenticated user
+            return self._make_request("GET", "/me")
 
     def get_video(self, video_id: str) -> Video:
         """
