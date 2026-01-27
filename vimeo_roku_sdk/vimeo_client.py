@@ -215,7 +215,6 @@ class VimeoClient:
         Returns:
             API response with video data and pagination info
         """
-        user_id = user_id or self._user_id or "me"
         per_page = min(per_page or self.DEFAULT_PER_PAGE, 100)
 
         params = {
@@ -231,7 +230,15 @@ class VimeoClient:
         if filter_playable:
             params["filter"] = "playable"
 
-        return self._make_request("GET", f"/users/{user_id}/videos", params=params)
+        # Use /me/videos for authenticated user, /users/{id}/videos for specific user
+        if user_id:
+            endpoint = f"/users/{user_id}/videos"
+        elif self._user_id:
+            endpoint = f"/users/{self._user_id}/videos"
+        else:
+            endpoint = "/me/videos"
+
+        return self._make_request("GET", endpoint, params=params)
 
     def iter_all_videos(
         self,
