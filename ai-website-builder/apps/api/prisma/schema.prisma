@@ -1,0 +1,182 @@
+// Prisma schema for AI Website Builder MVP
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// TENANTS & USERS
+// ============================================
+
+model Tenant {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  logoUrl      String?  @map("logo_url")
+  primaryColor String   @default("#2563EB") @map("primary_color")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  memberships Membership[]
+  sites       Site[]
+
+  @@map("tenants")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  memberships   Membership[]
+  sites         Site[]
+  subscriptions StripeSubscription[]
+
+  @@map("users")
+}
+
+enum MembershipRole {
+  owner
+  admin
+  member
+}
+
+model Membership {
+  id        String         @id @default(cuid())
+  userId    String         @map("user_id")
+  tenantId  String         @map("tenant_id")
+  role      MembershipRole @default(member)
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
+  @@map("memberships")
+}
+
+// ============================================
+// SITES & VERSIONS
+// ============================================
+
+enum SiteStatus {
+  provisioning
+  generating
+  draft
+  published
+  error
+}
+
+model Site {
+  id                 String     @id @default(cuid())
+  tenantId           String     @map("tenant_id")
+  ownerUserId        String     @map("owner_user_id")
+  name               String
+  status             SiteStatus @default(provisioning)
+  wpSiteId           Int?       @map("wp_site_id")
+  wpAdminUrl         String?    @map("wp_admin_url")
+  wpSiteUrl          String?    @map("wp_site_url")
+  currentVersionId   String?    @map("current_version_id")
+  publishedVersionId String?    @map("published_version_id")
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
+
+  tenant   Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  owner    User          @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  versions SiteVersion[]
+  jobs     Job[]
+
+  @@map("sites")
+}
+
+model SiteVersion {
+  id            String   @id @default(cuid())
+  siteId        String   @map("site_id")
+  versionNumber Int      @map("version_number")
+  pageJson      Json     @map("page_json")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([siteId, versionNumber])
+  @@map("site_versions")
+}
+
+// ============================================
+// JOBS & LOGS
+// ============================================
+
+enum JobType {
+  provision
+  generate
+  publish
+  rollback
+}
+
+enum JobStatus {
+  pending
+  running
+  completed
+  failed
+}
+
+model Job {
+  id          String    @id @default(cuid())
+  siteId      String    @map("site_id")
+  type        JobType
+  status      JobStatus @default(pending)
+  error       String?
+  metadata    Json?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  completedAt DateTime? @map("completed_at")
+
+  site Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  logs JobLog[]
+
+  @@map("jobs")
+}
+
+model JobLog {
+  id        String   @id @default(cuid())
+  jobId     String   @map("job_id")
+  message   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@map("job_logs")
+}
+
+// ============================================
+// STRIPE BILLING
+// ============================================
+
+enum SubscriptionStatus {
+  active
+  canceled
+  past_due
+  trialing
+  incomplete
+}
+
+model StripeSubscription {
+  id                   String             @id @default(cuid())
+  userId               String             @map("user_id")
+  stripeCustomerId     String             @map("stripe_customer_id")
+  stripeSubscriptionId String             @unique @map("stripe_subscription_id")
+  status               SubscriptionStatus @default(incomplete)
+  currentPeriodEnd     DateTime           @map("current_period_end")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("stripe_subscriptions")
+}
