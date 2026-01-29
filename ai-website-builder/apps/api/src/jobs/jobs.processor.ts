@@ -152,7 +152,7 @@ export class JobsProcessor implements OnModuleInit {
     }
 
     // Get settings from metadata or latest version
-    const existingContent = site.versions[0]?.pageJson as SiteContent | undefined;
+    const existingContent = site.versions[0]?.pageJson as unknown as SiteContent | undefined;
     const settings = (metadata?.settings || existingContent?.settings) as SiteContent['settings'];
 
     if (!settings) {
@@ -219,7 +219,7 @@ export class JobsProcessor implements OnModuleInit {
     }
 
     // Publish to WordPress
-    await this.wordpressService.publishVersion(site.wpSiteId, version.pageJson as SiteContent);
+    await this.wordpressService.publishVersion(site.wpSiteId, version.pageJson as unknown as SiteContent);
     await this.jobsService.addJobLog(jobId, 'Content published to WordPress');
 
     // Update site status
@@ -262,7 +262,7 @@ export class JobsProcessor implements OnModuleInit {
     }
 
     // Publish old version to WordPress
-    await this.wordpressService.publishVersion(site.wpSiteId, version.pageJson as SiteContent);
+    await this.wordpressService.publishVersion(site.wpSiteId, version.pageJson as unknown as SiteContent);
     await this.jobsService.addJobLog(jobId, 'Rolled back content published');
 
     // Update site

@@ -122,7 +122,7 @@ export class SitesService {
       throw new BadRequestException('No version found for site');
     }
 
-    const content = latestVersion.pageJson as SiteContent;
+    const content = latestVersion.pageJson as unknown as SiteContent;
 
     // Start generation job
     const job = await this.jobsService.createJob(site.id, JobType.generate, {
@@ -146,7 +146,7 @@ export class SitesService {
       throw new BadRequestException('No version found');
     }
 
-    const existingContent = currentVersion.pageJson as SiteContent;
+    const existingContent = currentVersion.pageJson as unknown as SiteContent;
 
     // Create new version
     const newVersion = await this.prisma.siteVersion.create({

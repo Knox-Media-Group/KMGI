@@ -30,7 +30,7 @@ export class JobsService {
         siteId,
         type,
         status: JobStatus.pending,
-        metadata: metadata || {},
+        metadata: (metadata || {}) as any,
       },
     });
 
