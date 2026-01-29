@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JobsService } from './jobs.service';
 import { WordPressService } from '../wordpress/wordpress.service';
 import { AiService } from '../ai/ai.service';
-import { JobStatus, SiteStatus } from '@prisma/client';
+import { JobStatus, SiteStatus } from '../common/enums';
 import { SiteContent } from '@builder/shared';
 
 interface JobData {

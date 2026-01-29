@@ -34,7 +34,7 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
     // Create user and membership in transaction
-    const user = await this.prisma.$transaction(async (tx) => {
+    const user = await this.prisma.$transaction(async (tx: any) => {
       const newUser = await tx.user.create({
         data: {
           email: dto.email,

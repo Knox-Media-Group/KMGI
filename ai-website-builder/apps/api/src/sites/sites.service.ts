@@ -3,8 +3,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JobsService } from '../jobs/jobs.service';
 import { BillingService } from '../billing/billing.service';
 import { CreateSiteDto, SaveDraftDto, RollbackDto } from './sites.dto';
-import { JobType, SiteStatus } from '@prisma/client';
-import { SiteContent, Page } from '@builder/shared';
+import { JobType, SiteStatus } from '../common/enums';
+import { SiteContent, SiteSettings, Page } from '@builder/shared';
 
 @Injectable()
 export class SitesService {
@@ -34,7 +34,7 @@ export class SitesService {
     // Create initial version with settings
     const initialContent: SiteContent = {
       pages: [],
-      settings: dto.settings,
+      settings: dto.settings as unknown as SiteSettings,
     };
 
     await this.prisma.siteVersion.create({

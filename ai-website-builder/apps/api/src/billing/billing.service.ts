@@ -2,7 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { PrismaService } from '../prisma/prisma.service';
-import { SubscriptionStatus } from '@prisma/client';
+import { SubscriptionStatus } from '../common/enums';
 
 @Injectable()
 export class BillingService {
