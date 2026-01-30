@@ -7,9 +7,10 @@ async function bootstrap() {
     rawBody: true, // Required for Stripe webhooks
   });
 
-  // Enable CORS for frontend (allow all origins in dev)
+  // Enable CORS for frontend
+  const frontendUrl = process.env.FRONTEND_URL;
   app.enableCors({
-    origin: true,
+    origin: frontendUrl ? [frontendUrl, 'http://localhost:3000'] : true,
     credentials: true,
   });
 

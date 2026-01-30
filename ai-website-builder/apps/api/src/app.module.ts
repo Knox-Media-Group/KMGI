@@ -8,8 +8,10 @@ import { JobsModule } from './jobs/jobs.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { WordPressModule } from './wordpress/wordpress.module';
 import { AiModule } from './ai/ai.module';
+import { HealthController } from './health.controller';
 
 @Module({
+  controllers: [HealthController],
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
