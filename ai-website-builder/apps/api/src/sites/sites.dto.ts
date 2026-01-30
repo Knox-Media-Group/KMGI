@@ -8,6 +8,10 @@ class SiteSettingsDto {
   @IsString()
   industry: string;
 
+  @IsString()
+  @IsOptional()
+  description?: string;
+
   @IsIn(['modern', 'classic', 'bold', 'minimal', 'playful', 'professional'])
   stylePreset: string;
 

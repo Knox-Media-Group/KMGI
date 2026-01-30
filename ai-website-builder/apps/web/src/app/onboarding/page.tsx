@@ -7,7 +7,7 @@ import { sitesApi, billingApi } from '@/lib/api';
 import { STYLE_PRESETS, INDUSTRIES, PRIMARY_CTA_OPTIONS, DEFAULT_ACCENT_COLORS } from '@builder/shared';
 import type { SiteSettings } from '@builder/shared';
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 8;
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -70,6 +70,7 @@ export default function OnboardingPage() {
     const settings = {
       businessName: data.businessName || '',
       industry: data.industry || 'Other',
+      description: data.description || '',
       stylePreset: data.stylePreset || 'modern',
       accentColor: data.accentColor || '#2563EB',
       primaryCta: data.primaryCta || 'call',
@@ -172,29 +173,36 @@ export default function OnboardingPage() {
 
           {step === 3 && (
             <Step3
+              value={data.description || ''}
+              onChange={(description) => updateData({ description })}
+            />
+          )}
+
+          {step === 4 && (
+            <Step4
               value={data.stylePreset || 'modern'}
               onChange={(stylePreset) => updateData({ stylePreset: stylePreset as SiteSettings['stylePreset'] })}
               primaryColor={tenant?.primaryColor}
             />
           )}
 
-          {step === 4 && (
-            <Step4
+          {step === 5 && (
+            <Step5
               value={data.accentColor || tenant?.primaryColor || '#2563EB'}
               onChange={(accentColor) => updateData({ accentColor })}
             />
           )}
 
-          {step === 5 && (
-            <Step5
+          {step === 6 && (
+            <Step6
               value={data.primaryCta || 'call'}
               onChange={(primaryCta) => updateData({ primaryCta: primaryCta as SiteSettings['primaryCta'] })}
               primaryColor={tenant?.primaryColor}
             />
           )}
 
-          {step === 6 && (
-            <Step6
+          {step === 7 && (
+            <Step7
               email={data.contactEmail || ''}
               phone={data.contactPhone || ''}
               onEmailChange={(contactEmail) => updateData({ contactEmail })}
@@ -202,8 +210,8 @@ export default function OnboardingPage() {
             />
           )}
 
-          {step === 7 && (
-            <Step7 data={data} />
+          {step === 8 && (
+            <Step8 data={data} />
           )}
 
           {/* Navigation */}
@@ -250,14 +258,16 @@ function isStepValid(step: number, data: Record<string, unknown>): boolean {
     case 2:
       return !!data.industry;
     case 3:
-      return !!data.stylePreset;
+      return !!data.description && (data.description as string).length >= 10;
     case 4:
-      return !!data.accentColor;
+      return !!data.stylePreset;
     case 5:
-      return !!data.primaryCta;
+      return !!data.accentColor;
     case 6:
-      return !!data.contactEmail && !!data.contactPhone;
+      return !!data.primaryCta;
     case 7:
+      return !!data.contactEmail && !!data.contactPhone;
+    case 8:
       return true;
     default:
       return false;
@@ -306,7 +316,28 @@ function Step2({ value, onChange }: { value: string; onChange: (v: string) => vo
   );
 }
 
-function Step3({ value, onChange, primaryColor }: { value: string; onChange: (v: string) => void; primaryColor?: string }) {
+function Step3({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <h2 className="text-2xl font-bold mb-2">Describe your website</h2>
+      <p className="text-gray-600 mb-6">
+        Tell us what you want. The more detail you provide, the better the AI can tailor your site.
+      </p>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="input min-h-[160px] resize-y"
+        placeholder="e.g. We're a local bakery specializing in custom wedding cakes and pastries. We want to showcase our gallery, highlight our most popular items, include pricing tiers, and make it easy for customers to place orders or book tastings."
+        autoFocus
+      />
+      <p className="mt-2 text-sm text-gray-400">
+        {value.length < 10 ? 'At least 10 characters required' : `${value.length} characters`}
+      </p>
+    </div>
+  );
+}
+
+function Step4({ value, onChange, primaryColor }: { value: string; onChange: (v: string) => void; primaryColor?: string }) {
   return (
     <div>
       <h2 className="text-2xl font-bold mb-2">Choose a style</h2>
@@ -331,7 +362,7 @@ function Step3({ value, onChange, primaryColor }: { value: string; onChange: (v:
   );
 }
 
-function Step4({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function Step5({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <div>
       <h2 className="text-2xl font-bold mb-2">Pick your accent color</h2>
@@ -368,7 +399,7 @@ function Step4({ value, onChange }: { value: string; onChange: (v: string) => vo
   );
 }
 
-function Step5({ value, onChange, primaryColor }: { value: string; onChange: (v: string) => void; primaryColor?: string }) {
+function Step6({ value, onChange, primaryColor }: { value: string; onChange: (v: string) => void; primaryColor?: string }) {
   return (
     <div>
       <h2 className="text-2xl font-bold mb-2">What should visitors do?</h2>
@@ -392,7 +423,7 @@ function Step5({ value, onChange, primaryColor }: { value: string; onChange: (v:
   );
 }
 
-function Step6({
+function Step7({
   email,
   phone,
   onEmailChange,
@@ -433,7 +464,7 @@ function Step6({
   );
 }
 
-function Step7({ data }: { data: Record<string, unknown> }) {
+function Step8({ data }: { data: Record<string, unknown> }) {
   return (
     <div>
       <h2 className="text-2xl font-bold mb-2">Ready to generate!</h2>
@@ -447,6 +478,10 @@ function Step7({ data }: { data: Record<string, unknown> }) {
         <div className="flex justify-between">
           <span className="text-gray-600">Industry:</span>
           <span className="font-medium">{data.industry as string}</span>
+        </div>
+        <div>
+          <span className="text-gray-600">Description:</span>
+          <p className="font-medium text-sm mt-1">{data.description as string}</p>
         </div>
         <div className="flex justify-between">
           <span className="text-gray-600">Style:</span>
@@ -475,7 +510,7 @@ function Step7({ data }: { data: Record<string, unknown> }) {
       </div>
 
       <p className="mt-6 text-sm text-gray-500">
-        Click "Generate My Website" to create your site. AI will generate your Home and Contact pages.
+        Click "Generate My Website" to create your site. AI will generate your pages based on your description.
       </p>
     </div>
   );

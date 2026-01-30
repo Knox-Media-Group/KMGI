@@ -23,10 +23,14 @@ interface ProvisionResult {
 export class WordPressService {
   private wpCliPath: string;
   private wpMultisiteUrl: string;
+  private mockMode: boolean;
 
   constructor(private configService: ConfigService) {
     this.wpCliPath = this.configService.get('WP_CLI_PATH') || 'wp';
     this.wpMultisiteUrl = this.configService.get('WP_MULTISITE_URL') || 'http://localhost:8080';
+    // Enable mock mode if WP_MOCK_MODE is set, or if in development, or if no WP_MULTISITE_URL is configured
+    const wpMock = this.configService.get('WP_MOCK_MODE');
+    this.mockMode = wpMock === 'true' || wpMock === '1' || this.configService.get('NODE_ENV') === 'development';
   }
 
   private async runWpCli(command: string): Promise<string> {
@@ -78,9 +82,8 @@ export class WordPressService {
         wpSiteUrl: siteUrl,
       };
     } catch (error) {
-      // In dev mode, simulate WP site creation
-      if (this.configService.get('NODE_ENV') === 'development') {
-        console.log('DEV MODE: Simulating WordPress site creation');
+      if (this.mockMode) {
+        console.log('MOCK MODE: Simulating WordPress site creation');
         const mockSiteId = Math.floor(Math.random() * 10000);
         return {
           wpSiteId: mockSiteId,
@@ -105,9 +108,8 @@ export class WordPressService {
 
       console.log(`Theme and plugins applied for site ${wpSiteId}`);
     } catch (error) {
-      // In dev mode, just log
-      if (this.configService.get('NODE_ENV') === 'development') {
-        console.log('DEV MODE: Simulating theme/plugin setup');
+      if (this.mockMode) {
+        console.log('MOCK MODE: Simulating theme/plugin setup');
         return;
       }
       throw error;
@@ -155,9 +157,8 @@ export class WordPressService {
 
       console.log(`Published ${content.pages.length} pages to WordPress site ${wpSiteId}`);
     } catch (error) {
-      // In dev mode, just log
-      if (this.configService.get('NODE_ENV') === 'development') {
-        console.log('DEV MODE: Simulating publish to WordPress');
+      if (this.mockMode) {
+        console.log('MOCK MODE: Simulating publish to WordPress');
         console.log('Pages to publish:', content.pages.map((p: Page) => p.title));
         return;
       }

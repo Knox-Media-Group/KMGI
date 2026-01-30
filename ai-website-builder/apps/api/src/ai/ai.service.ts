@@ -45,9 +45,14 @@ export class AiService {
   }
 
   private async generateHomePage(settings: SiteSettings): Promise<Page> {
-    const prompt = `Generate website copy for a ${settings.industry} business called "${settings.businessName}".
+    const descriptionContext = settings.description
+      ? `\nBusiness description: ${settings.description}`
+      : '';
+    const prompt = `Generate website copy for a ${settings.industry} business called "${settings.businessName}".${descriptionContext}
 Style: ${settings.stylePreset}
 Primary action: ${settings.primaryCta === 'call' ? 'Call us' : settings.primaryCta === 'book' ? 'Book appointment' : 'Get a quote'}
+
+Use the business description to create highly specific, relevant content. Tailor the services, testimonials, and copy to match what the business actually does.
 
 Generate JSON with this structure:
 {
@@ -263,11 +268,15 @@ Respond ONLY with valid JSON array.`;
   }
 
   private createFallbackHomePage(settings: SiteSettings): Page {
+    const aboutText = settings.description
+      ? `${settings.businessName} — ${settings.description}`
+      : `${settings.businessName} has been proudly serving our community with top-quality ${settings.industry.toLowerCase()} services. Our dedicated team brings years of experience and a commitment to excellence that sets us apart.`;
+
     return this.buildHomePage(settings, {
       heroHeadline: `Welcome to ${settings.businessName}`,
       heroSubheadline: `Your trusted partner in ${settings.industry.toLowerCase()}. We deliver excellence with every interaction.`,
       aboutTitle: 'About Us',
-      aboutText: `${settings.businessName} has been proudly serving our community with top-quality ${settings.industry.toLowerCase()} services. Our dedicated team brings years of experience and a commitment to excellence that sets us apart.`,
+      aboutText,
       services: [
         { title: 'Professional Service', description: 'Expert solutions tailored to your needs' },
         { title: 'Quality Guaranteed', description: 'We stand behind our work with confidence' },

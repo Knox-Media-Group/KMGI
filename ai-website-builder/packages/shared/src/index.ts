@@ -144,6 +144,7 @@ export interface SiteContent {
 export interface SiteSettings {
   businessName: string;
   industry: string;
+  description?: string;
   stylePreset: StylePreset;
   accentColor: string;
   primaryCta: PrimaryCta;
@@ -268,23 +269,27 @@ export interface WizardStep2 {
 }
 
 export interface WizardStep3 {
-  stylePreset: StylePreset;
+  description: string;
 }
 
 export interface WizardStep4 {
-  accentColor: string;
+  stylePreset: StylePreset;
 }
 
 export interface WizardStep5 {
-  primaryCta: PrimaryCta;
+  accentColor: string;
 }
 
 export interface WizardStep6 {
+  primaryCta: PrimaryCta;
+}
+
+export interface WizardStep7 {
   contactEmail: string;
   contactPhone: string;
 }
 
-export type WizardData = WizardStep1 & WizardStep2 & WizardStep3 & WizardStep4 & WizardStep5 & WizardStep6;
+export type WizardData = WizardStep1 & WizardStep2 & WizardStep3 & WizardStep4 & WizardStep5 & WizardStep6 & WizardStep7;
 
 // ============================================
 // CONSTANTS

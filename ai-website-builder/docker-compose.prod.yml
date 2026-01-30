@@ -54,6 +54,7 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
       NODE_ENV: production
       PORT: 4000
+      WP_MOCK_MODE: "true"
     networks:
       - internal
     healthcheck:
