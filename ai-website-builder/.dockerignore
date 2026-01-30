@@ -1,0 +1,13 @@
+node_modules
+.next
+dist
+*.tsbuildinfo
+.env
+.env.*
+.git
+.gitignore
+docker-compose*.yml
+Dockerfile*
+deploy.sh
+nginx.conf
+*.md

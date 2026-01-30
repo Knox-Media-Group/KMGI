@@ -1,0 +1,41 @@
+FROM node:20-alpine AS base
+
+# Install dependencies
+FROM base AS deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY apps/api/package.json ./apps/api/
+COPY packages/shared/package.json ./packages/shared/
+RUN npm ci --ignore-scripts
+
+# Build the application
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Build shared package
+WORKDIR /app/packages/shared
+RUN npx tsc
+
+# Generate Prisma client and build API
+WORKDIR /app/apps/api
+RUN npx prisma generate
+RUN rm -f tsconfig.build.tsbuildinfo && npx tsc -p tsconfig.build.json
+
+# Production image
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/api/dist ./dist
+COPY --from=builder /app/apps/api/prisma ./prisma
+COPY --from=builder /app/apps/api/package.json ./package.json
+COPY --from=builder /app/packages/shared/dist ./node_modules/@builder/shared/dist
+COPY --from=builder /app/packages/shared/package.json ./node_modules/@builder/shared/package.json
+
+EXPOSE 4000
+
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
