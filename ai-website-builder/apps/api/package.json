@@ -42,9 +42,10 @@
     "@types/passport-jwt": "^4.0.0",
     "prisma": "^5.8.0",
     "ts-node": "^10.9.2",
+    "tsx": "^4.7.0",
     "typescript": "^5.3.0"
   },
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts"
   }
 }
