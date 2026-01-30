@@ -37,6 +37,17 @@ export class BillingService {
   }
 
   async getBillingStatus(userId: string) {
+    // In development without Stripe, treat all users as subscribed
+    if (!this.stripe) {
+      return {
+        hasSubscription: true,
+        subscription: {
+          status: 'active',
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        },
+      };
+    }
+
     const subscription = await this.prisma.stripeSubscription.findFirst({
       where: { userId },
       orderBy: { createdAt: 'desc' },
