@@ -14,11 +14,13 @@ export class JobsService {
   ) {
     const redisHost = this.configService.get('REDIS_HOST') || 'localhost';
     const redisPort = this.configService.get('REDIS_PORT') || 6379;
+    const redisPassword = this.configService.get('REDIS_PASSWORD');
 
     this.queue = new Queue('site-jobs', {
       connection: {
         host: redisHost,
         port: Number(redisPort),
+        ...(redisPassword && { password: redisPassword }),
       },
     });
   }
