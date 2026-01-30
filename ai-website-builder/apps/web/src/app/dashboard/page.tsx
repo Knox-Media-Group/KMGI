@@ -11,8 +11,8 @@ interface Site {
   name: string;
   status: string;
   wpSiteUrl: string | null;
-  currentVersionId: string | null;
-  publishedVersionId: string | null;
+  currentVersionId?: string | null;
+  publishedVersionId?: string | null;
   createdAt: string;
 }
 

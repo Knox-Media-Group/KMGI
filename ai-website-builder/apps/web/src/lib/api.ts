@@ -34,13 +34,13 @@ export async function api<T>(endpoint: string, options: ApiOptions = {}): Promis
 // Auth endpoints
 export const authApi = {
   signup: (email: string, password: string, tenantSlug?: string) =>
-    api<{ token: string; user: { id: string; email: string }; tenant: { id: string; name: string; primaryColor: string } }>(
+    api<{ token: string; user: { id: string; email: string }; tenant: { id: string; name: string; primaryColor: string; logoUrl: string | null } }>(
       '/auth/signup',
       { method: 'POST', body: { email, password, tenantSlug } }
     ),
 
   login: (email: string, password: string, tenantSlug?: string) =>
-    api<{ token: string; user: { id: string; email: string }; tenant: { id: string; name: string; primaryColor: string } }>(
+    api<{ token: string; user: { id: string; email: string }; tenant: { id: string; name: string; primaryColor: string; logoUrl: string | null } }>(
       '/auth/login',
       { method: 'POST', body: { email, password, tenantSlug } }
     ),
@@ -82,6 +82,7 @@ export const sitesApi = {
         wpSiteUrl: string | null;
         currentVersionId: string | null;
         publishedVersionId: string | null;
+        createdAt: string;
       };
       currentVersion: { id: string; versionNumber: number; pageJson: unknown } | null;
       versions: Array<{ id: string; versionNumber: number; createdAt: string }>;

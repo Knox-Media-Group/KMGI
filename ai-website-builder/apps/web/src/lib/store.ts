@@ -231,7 +231,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const block = section.blocks.find(b => b.id === blockId);
     if (!block) return;
 
-    block.props = { ...block.props, ...props };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    block.props = { ...block.props, ...props } as any;
   })),
 
   saveSnapshot: () => set(produce((state: EditorState) => {

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore, useWizardStore } from '@/lib/store';
 import { sitesApi, billingApi } from '@/lib/api';
 import { STYLE_PRESETS, INDUSTRIES, PRIMARY_CTA_OPTIONS, DEFAULT_ACCENT_COLORS } from '@builder/shared';
+import type { SiteSettings } from '@builder/shared';
 
 const TOTAL_STEPS = 7;
 
@@ -172,7 +173,7 @@ export default function OnboardingPage() {
           {step === 3 && (
             <Step3
               value={data.stylePreset || 'modern'}
-              onChange={(stylePreset) => updateData({ stylePreset })}
+              onChange={(stylePreset) => updateData({ stylePreset: stylePreset as SiteSettings['stylePreset'] })}
               primaryColor={tenant?.primaryColor}
             />
           )}
@@ -187,7 +188,7 @@ export default function OnboardingPage() {
           {step === 5 && (
             <Step5
               value={data.primaryCta || 'call'}
-              onChange={(primaryCta) => updateData({ primaryCta })}
+              onChange={(primaryCta) => updateData({ primaryCta: primaryCta as SiteSettings['primaryCta'] })}
               primaryColor={tenant?.primaryColor}
             />
           )}
