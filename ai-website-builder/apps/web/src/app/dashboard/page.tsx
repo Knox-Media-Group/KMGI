@@ -274,7 +274,7 @@ function DashboardPageContent() {
                     </span>
                   </div>
 
-                  {selectedSite.wpSiteUrl && (
+                  {selectedSite.wpSiteUrl && !selectedSite.wpSiteUrl.includes('localhost') && (
                     <div className="mb-6">
                       <a
                         href={selectedSite.wpSiteUrl}
@@ -289,15 +289,13 @@ function DashboardPageContent() {
 
                   {/* Actions */}
                   <div className="flex flex-wrap gap-4">
-                    {selectedSite.wpSiteUrl && (
-                      <a
-                        href={selectedSite.wpSiteUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                    {selectedSite.currentVersionId && selectedSite.status !== 'provisioning' && (
+                      <Link
+                        href={`/editor/${selectedSite.id}`}
                         className="btn-secondary text-base py-3 px-6"
                       >
                         Preview Site
-                      </a>
+                      </Link>
                     )}
 
                     {selectedSite.currentVersionId && selectedSite.status !== 'provisioning' && (
