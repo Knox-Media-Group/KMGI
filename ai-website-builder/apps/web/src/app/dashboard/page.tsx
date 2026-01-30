@@ -1,10 +1,18 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/lib/store';
 import { sitesApi, jobsApi, authApi } from '@/lib/api';
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-pulse text-xl">Loading...</div></div>}>
+      <DashboardPageContent />
+    </Suspense>
+  );
+}
 
 interface Site {
   id: string;
@@ -30,7 +38,7 @@ interface Job {
   logs: Array<{ message: string; createdAt: string }>;
 }
 
-export default function DashboardPage() {
+function DashboardPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { token, tenant, user, setSubscription, logout } = useAuthStore();
