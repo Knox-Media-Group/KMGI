@@ -221,6 +221,82 @@ class RokuVideo:
     video_type: VideoType = VideoType.SHORT_FORM
     rating: Optional[Dict[str, str]] = None
 
+    # Roku-approved genres
+    VALID_GENRES = {
+        "action", "adventure", "animals", "animated", "anime",
+        "children", "comedy", "crime", "documentary", "drama",
+        "educational", "fantasy", "faith", "food", "fashion",
+        "gaming", "health", "history", "horror", "miniseries",
+        "mystery", "nature", "news", "reality", "romance",
+        "science", "science fiction", "sitcom", "special",
+        "sports", "thriller", "technology"
+    }
+
+    # Map common Vimeo categories to Roku genres
+    GENRE_MAP = {
+        "music": "special",
+        "entertainment": "special",
+        "art": "special",
+        "animation": "animated",
+        "comedy": "comedy",
+        "documentary": "documentary",
+        "drama": "drama",
+        "education": "educational",
+        "educational": "educational",
+        "experimental": "special",
+        "faith": "faith",
+        "family": "children",
+        "fashion": "fashion",
+        "food": "food",
+        "game": "gaming",
+        "gaming": "gaming",
+        "health": "health",
+        "history": "history",
+        "horror": "horror",
+        "kids": "children",
+        "lifestyle": "reality",
+        "nature": "nature",
+        "news": "news",
+        "reality": "reality",
+        "romance": "romance",
+        "science": "science",
+        "sci-fi": "science fiction",
+        "sports": "sports",
+        "technology": "technology",
+        "thriller": "thriller",
+        "travel": "nature",
+        "animals": "animals",
+        "action": "action",
+        "adventure": "adventure",
+    }
+
+    # Valid Roku video types
+    VALID_VIDEO_TYPES = {"HLS", "SMOOTH", "DASH", "MP4", "MOV", "M4V"}
+
+    @classmethod
+    def _map_genre(cls, category: str) -> str:
+        """Map a Vimeo category to a valid Roku genre."""
+        lower = category.lower().strip()
+        if lower in cls.VALID_GENRES:
+            return lower
+        return cls.GENRE_MAP.get(lower, "special")
+
+    @classmethod
+    def _map_video_type(cls, vtype: str) -> str:
+        """Map a video type to a valid Roku video type."""
+        upper = vtype.upper().strip()
+        if upper in cls.VALID_VIDEO_TYPES:
+            return upper
+        if "HLS" in upper or "M3U8" in upper:
+            return "HLS"
+        if "MP4" in upper or "H264" in upper:
+            return "MP4"
+        if "DASH" in upper:
+            return "DASH"
+        if "MOV" in upper:
+            return "MOV"
+        return "MP4"
+
     @classmethod
     def from_video(cls, video: Video, video_type: VideoType = None) -> "RokuVideo":
         """Create a RokuVideo from a Video instance."""
@@ -242,33 +318,53 @@ class RokuVideo:
             content["videos"].append({
                 "url": video_file.url,
                 "quality": video_file.quality.value,
-                "videoType": video_file.video_type
+                "videoType": cls._map_video_type(video_file.video_type)
             })
 
         # Determine video type based on duration if not specified
         if video_type is None:
-            # Short form is typically under 15 minutes
             if video.duration < 900:
                 video_type = VideoType.SHORT_FORM
             else:
                 video_type = VideoType.MOVIE
 
-        # Truncate descriptions to Roku limits
-        short_desc = video.description[:200] if video.description else video.title
-        long_desc = video.description[:500] if video.description else video.title
+        # Ensure descriptions are never empty
+        short_desc = (video.description or video.title or "Video")[:200].strip()
+        if not short_desc:
+            short_desc = video.title[:200] if video.title else "Video"
+        long_desc = (video.description or video.title or "Video")[:500].strip()
+        if not long_desc:
+            long_desc = short_desc
+
+        # Map genres to Roku-approved values
+        genres = []
+        if video.categories:
+            genres = list(set(cls._map_genre(cat) for cat in video.categories[:5]))
+        if not genres:
+            genres = ["special"]
+
+        # Ensure tags are never empty (Roku requires at least one)
+        tags = video.tags[:20] if video.tags else [video.title.split()[0].lower() if video.title else "video"]
+
+        # Build rating
+        rating = {
+            "rating": "TV-G",
+            "ratingSource": "USA_TV"
+        }
 
         return cls(
             id=f"vimeo-{video.id}",
-            title=video.title[:100],  # Roku title limit
+            title=video.title[:100] if video.title else "Untitled",
             short_description=short_desc,
             long_description=long_desc,
-            release_date=video.release_date.strftime("%Y-%m-%d") if video.release_date else video.created_time.strftime("%Y-%m-%d"),
+            release_date=video.release_date.strftime("%Y-%m-%dT%H:%M:%SZ") if video.release_date else video.created_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
             duration=video.duration,
             thumbnail=thumbnail_url,
             content=content,
-            tags=video.tags[:20],  # Limit tags
-            genres=video.categories[:5] if video.categories else ["Entertainment"],
-            video_type=video_type
+            tags=tags,
+            genres=genres,
+            video_type=video_type,
+            rating=rating
         )
 
     def to_dict(self) -> Dict[str, Any]:
