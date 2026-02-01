@@ -70,9 +70,21 @@ def run_sync(config: Config, upload: bool = True, notify: bool = True) -> bool:
         if result.success:
             logger.info(
                 f"Sync completed successfully: "
-                f"{result.videos_added} added, "
-                f"{result.videos_skipped} skipped"
+                f"{result.videos_added} new, "
+                f"{result.videos_unchanged} cached, "
+                f"{result.videos_skipped} skipped "
+                f"in {result.duration_seconds:.1f}s"
             )
+
+            # Deploy to GitHub Pages
+            if result.feed_path:
+                logger.info("Deploying feed to GitHub Pages...")
+                try:
+                    from deploy_feed import deploy_to_gh_pages
+                    deploy_to_gh_pages(result.feed_path)
+                except Exception as e:
+                    logger.error(f"Failed to deploy to GitHub Pages: {e}")
+
             if result.feed_url:
                 logger.info(f"Feed published to: {result.feed_url}")
         else:
