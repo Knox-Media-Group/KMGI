@@ -298,6 +298,19 @@ class RokuVideo:
         return "MP4"
 
     @classmethod
+    def _clean_text(cls, text: str) -> str:
+        """Clean text for Roku feed - remove problematic characters."""
+        if not text:
+            return ""
+        # Remove unmatched/trailing quotes and control characters
+        text = text.replace('\\"', '"').replace('"', "'")
+        text = text.replace('\n', ' ').replace('\r', ' ').replace('\t', ' ')
+        # Collapse multiple spaces
+        while '  ' in text:
+            text = text.replace('  ', ' ')
+        return text.strip()
+
+    @classmethod
     def from_video(cls, video: Video, video_type: VideoType = None) -> "RokuVideo":
         """Create a RokuVideo from a Video instance."""
         # Get best thumbnail
@@ -310,7 +323,7 @@ class RokuVideo:
         # Build content object
         content = {
             "dateAdded": video.created_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "duration": video.duration,
+            "duration": max(video.duration, 1),  # Minimum 1 second
             "videos": []
         }
 
@@ -328,11 +341,14 @@ class RokuVideo:
             else:
                 video_type = VideoType.MOVIE
 
-        # Ensure descriptions are never empty
-        short_desc = (video.description or video.title or "Video")[:200].strip()
+        # Clean and ensure descriptions are never empty
+        clean_title = cls._clean_text(video.title) or "Untitled"
+        clean_desc = cls._clean_text(video.description)
+
+        short_desc = (clean_desc or clean_title)[:200]
         if not short_desc:
-            short_desc = video.title[:200] if video.title else "Video"
-        long_desc = (video.description or video.title or "Video")[:500].strip()
+            short_desc = clean_title[:200]
+        long_desc = (clean_desc or clean_title)[:500]
         if not long_desc:
             long_desc = short_desc
 
@@ -344,7 +360,8 @@ class RokuVideo:
             genres = ["special"]
 
         # Ensure tags are never empty (Roku requires at least one)
-        tags = video.tags[:20] if video.tags else [video.title.split()[0].lower() if video.title else "video"]
+        first_word = clean_title.split()[0].lower() if clean_title.split() else "video"
+        tags = video.tags[:20] if video.tags else [first_word]
 
         # Build rating
         rating = {
@@ -354,11 +371,11 @@ class RokuVideo:
 
         return cls(
             id=f"vimeo-{video.id}",
-            title=video.title[:100] if video.title else "Untitled",
+            title=clean_title[:100],
             short_description=short_desc,
             long_description=long_desc,
             release_date=video.release_date.strftime("%Y-%m-%dT%H:%M:%SZ") if video.release_date else video.created_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            duration=video.duration,
+            duration=max(video.duration, 1),
             thumbnail=thumbnail_url,
             content=content,
             tags=tags,
@@ -373,13 +390,16 @@ class RokuVideo:
             "id": self.id,
             "title": self.title,
             "shortDescription": self.short_description,
-            "longDescription": self.long_description,
             "releaseDate": self.release_date,
             "thumbnail": self.thumbnail,
             "content": self.content,
             "tags": self.tags,
             "genres": self.genres
         }
+
+        # longDescription only valid for movies and tvSpecials, not shortFormVideos
+        if self.video_type in (VideoType.MOVIE, VideoType.TV_SPECIAL):
+            result["longDescription"] = self.long_description
 
         if self.rating:
             result["rating"] = self.rating
