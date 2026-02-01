@@ -342,14 +342,20 @@ class SyncManager:
                         cached_data = self._cache.get_cached_roku_data(video.id)
                         cached_type = self._cache.get_cached_type(video.id)
                         if cached_data:
-                            if cached_type == "short_form":
-                                self.feed_generator.feed.short_form_videos.append(
-                                    type('obj', (object,), {'to_dict': lambda s, d=cached_data: d})()
-                                )
-                            else:
-                                self.feed_generator.feed.movies.append(
-                                    type('obj', (object,), {'to_dict': lambda s, d=cached_data: d})()
-                                )
+                            cached_video = RokuVideo(
+                                id=cached_data.get("id", ""),
+                                title=cached_data.get("title", ""),
+                                short_description=cached_data.get("shortDescription", ""),
+                                long_description=cached_data.get("longDescription", ""),
+                                release_date=cached_data.get("releaseDate", ""),
+                                duration=cached_data.get("content", {}).get("duration", 0),
+                                thumbnail=cached_data.get("thumbnail", ""),
+                                content=cached_data.get("content", {}),
+                                tags=cached_data.get("tags", []),
+                                genres=cached_data.get("genres", []),
+                                video_type=VideoType.SHORT_FORM if cached_type == "short_form" else VideoType.MOVIE
+                            )
+                            self.feed_generator.feed.add_video(cached_video)
                             result.videos_unchanged += 1
                             continue
 
