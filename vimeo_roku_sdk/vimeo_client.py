@@ -6,6 +6,7 @@ import time
 import logging
 from typing import Optional, List, Dict, Any, Generator
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 
 from .models import Video
@@ -18,33 +19,35 @@ from .exceptions import (
 
 logger = logging.getLogger(__name__)
 
+# Minimal fields for fast fetching (skip heavy fields like embed)
+FAST_FIELDS = (
+    "uri,name,description,duration,created_time,modified_time,"
+    "release_time,pictures.sizes,files,play,tags.name,"
+    "categories.name,privacy.view,link,stats.plays,"
+    "metadata.connections.likes.total,player_embed_url"
+)
+
 
 class VimeoClient:
     """
     Client for interacting with the Vimeo API.
 
     Handles authentication, pagination, rate limiting, and video retrieval.
+    Supports concurrent page fetching for large libraries.
     """
 
     BASE_URL = "https://api.vimeo.com"
     DEFAULT_PER_PAGE = 100  # Vimeo's max per page
+    MAX_WORKERS = 6  # Concurrent API requests
 
     def __init__(
         self,
         access_token: str = None,
         client_id: str = None,
         client_secret: str = None,
-        config: VimeoConfig = None
+        config: VimeoConfig = None,
+        max_workers: int = None
     ):
-        """
-        Initialize the Vimeo client.
-
-        Args:
-            access_token: Vimeo API access token
-            client_id: Vimeo app client ID (optional, for generating tokens)
-            client_secret: Vimeo app client secret (optional, for generating tokens)
-            config: VimeoConfig object (alternative to individual parameters)
-        """
         if config:
             self.access_token = config.access_token
             self.client_id = config.client_id
@@ -70,9 +73,7 @@ class VimeoClient:
             "Accept": "application/vnd.vimeo.*+json;version=3.4"
         })
 
-        # Rate limiting
-        self._last_request_time = 0
-        self._min_request_interval = 0.1  # 100ms between requests
+        self._max_workers = max_workers or self.MAX_WORKERS
 
     def _make_request(
         self,
@@ -82,31 +83,8 @@ class VimeoClient:
         data: Dict[str, Any] = None,
         retry_count: int = 3
     ) -> Dict[str, Any]:
-        """
-        Make a request to the Vimeo API with rate limiting and retry logic.
-
-        Args:
-            method: HTTP method (GET, POST, etc.)
-            endpoint: API endpoint (without base URL)
-            params: Query parameters
-            data: Request body data
-            retry_count: Number of retries on failure
-
-        Returns:
-            API response as dictionary
-
-        Raises:
-            VimeoAPIError: On API errors
-            VimeoAuthError: On authentication errors
-            VimeoRateLimitError: On rate limit errors
-        """
+        """Make a request to the Vimeo API with retry logic."""
         url = f"{self.BASE_URL}{endpoint}"
-
-        # Rate limiting
-        elapsed = time.time() - self._last_request_time
-        if elapsed < self._min_request_interval:
-            time.sleep(self._min_request_interval - elapsed)
-        self._last_request_time = time.time()
 
         for attempt in range(retry_count):
             try:
@@ -118,11 +96,10 @@ class VimeoClient:
                     timeout=30
                 )
 
-                # Handle rate limiting
                 if response.status_code == 429:
                     retry_after = int(response.headers.get("Retry-After", 60))
                     if attempt < retry_count - 1:
-                        logger.warning(f"Rate limited, waiting {retry_after} seconds...")
+                        logger.warning(f"Rate limited, waiting {retry_after}s...")
                         time.sleep(retry_after)
                         continue
                     raise VimeoRateLimitError(
@@ -130,14 +107,12 @@ class VimeoClient:
                         retry_after=retry_after
                     )
 
-                # Handle authentication errors
                 if response.status_code in (401, 403):
                     raise VimeoAuthError(
                         f"Authentication failed: {response.text}",
                         status_code=response.status_code
                     )
 
-                # Handle other errors
                 if response.status_code >= 400:
                     raise VimeoAPIError(
                         f"API request failed: {response.text}",
@@ -149,48 +124,55 @@ class VimeoClient:
 
             except requests.exceptions.RequestException as e:
                 if attempt < retry_count - 1:
-                    wait_time = 2 ** attempt  # Exponential backoff
+                    wait_time = 2 ** attempt
                     logger.warning(f"Request failed, retrying in {wait_time}s: {e}")
                     time.sleep(wait_time)
                     continue
                 raise VimeoAPIError(f"Request failed after {retry_count} attempts: {e}")
 
-    def get_user(self, user_id: str = None) -> Dict[str, Any]:
-        """
-        Get user information.
-
-        Args:
-            user_id: User ID or 'me' for authenticated user
-
-        Returns:
-            User data dictionary
-        """
+    def _get_endpoint(self, user_id: str = None, suffix: str = "") -> str:
+        """Build the correct API endpoint for user resources."""
         if user_id:
-            return self._make_request("GET", f"/users/{user_id}")
+            return f"/users/{user_id}{suffix}"
         elif self._user_id:
-            return self._make_request("GET", f"/users/{self._user_id}")
+            return f"/users/{self._user_id}{suffix}"
         else:
-            # Use /me endpoint for authenticated user
-            return self._make_request("GET", "/me")
+            return f"/me{suffix}"
+
+    def get_user(self, user_id: str = None) -> Dict[str, Any]:
+        """Get user information."""
+        return self._make_request("GET", self._get_endpoint(user_id))
 
     def get_video(self, video_id: str) -> Video:
-        """
-        Get a single video by ID.
-
-        Args:
-            video_id: Vimeo video ID
-
-        Returns:
-            Video object
-        """
-        # Request additional fields for full video information
-        params = {
-            "fields": "uri,name,description,duration,created_time,modified_time,"
-                      "release_time,pictures,files,play,tags,categories,privacy,"
-                      "embed,link,stats,metadata,player_embed_url"
-        }
+        """Get a single video by ID."""
+        params = {"fields": FAST_FIELDS}
         data = self._make_request("GET", f"/videos/{video_id}", params=params)
         return Video.from_vimeo_response(data)
+
+    def _fetch_page(
+        self,
+        endpoint: str,
+        page: int,
+        per_page: int = 100,
+        sort: str = "date",
+        direction: str = "desc",
+        filter_playable: bool = True,
+        extra_params: Dict[str, Any] = None
+    ) -> Dict[str, Any]:
+        """Fetch a single page of results."""
+        params = {
+            "per_page": per_page,
+            "page": page,
+            "sort": sort,
+            "direction": direction,
+            "fields": FAST_FIELDS
+        }
+        if filter_playable:
+            params["filter"] = "playable"
+        if extra_params:
+            params.update(extra_params)
+
+        return self._make_request("GET", endpoint, params=params)
 
     def get_videos(
         self,
@@ -201,44 +183,99 @@ class VimeoClient:
         direction: str = "desc",
         filter_playable: bool = True
     ) -> Dict[str, Any]:
+        """Get videos for a user (single page)."""
+        per_page = min(per_page or self.DEFAULT_PER_PAGE, 100)
+        endpoint = self._get_endpoint(user_id, "/videos")
+        return self._fetch_page(endpoint, page, per_page, sort, direction, filter_playable)
+
+    def get_all_videos_fast(
+        self,
+        user_id: str = None,
+        sort: str = "date",
+        direction: str = "desc",
+        filter_playable: bool = True,
+        limit: int = None,
+        on_progress: callable = None
+    ) -> List[Video]:
         """
-        Get videos for a user.
+        Fetch all videos using concurrent page requests.
+
+        Fetches page 1 first to determine total pages, then fetches
+        all remaining pages in parallel using a thread pool.
 
         Args:
-            user_id: User ID or 'me' for authenticated user
-            per_page: Number of videos per page (max 100)
-            page: Page number
-            sort: Sort field (date, alphabetical, plays, likes, duration)
-            direction: Sort direction (asc, desc)
-            filter_playable: Only return videos that are playable
+            user_id: User ID
+            sort: Sort field
+            direction: Sort direction
+            filter_playable: Only return playable videos
+            limit: Maximum number of videos to return
+            on_progress: Callback(pages_done, total_pages)
 
         Returns:
-            API response with video data and pagination info
+            List of Video objects
         """
-        per_page = min(per_page or self.DEFAULT_PER_PAGE, 100)
+        endpoint = self._get_endpoint(user_id, "/videos")
 
-        params = {
-            "per_page": per_page,
-            "page": page,
-            "sort": sort,
-            "direction": direction,
-            "fields": "uri,name,description,duration,created_time,modified_time,"
-                      "release_time,pictures,files,play,tags,categories,privacy,"
-                      "embed,link,stats,metadata,player_embed_url"
-        }
+        # Fetch first page to get total count
+        logger.info("Fetching page 1 to determine total videos...")
+        first_page = self._fetch_page(
+            endpoint, 1, 100, sort, direction, filter_playable
+        )
 
-        if filter_playable:
-            params["filter"] = "playable"
+        total = first_page.get("total", 0)
+        per_page = 100
+        total_pages = (total + per_page - 1) // per_page
 
-        # Use /me/videos for authenticated user, /users/{id}/videos for specific user
-        if user_id:
-            endpoint = f"/users/{user_id}/videos"
-        elif self._user_id:
-            endpoint = f"/users/{self._user_id}/videos"
-        else:
-            endpoint = "/me/videos"
+        if limit:
+            max_pages = (limit + per_page - 1) // per_page
+            total_pages = min(total_pages, max_pages)
 
-        return self._make_request("GET", endpoint, params=params)
+        logger.info(f"Total videos: {total}, pages: {total_pages}")
+
+        # Parse first page results
+        all_video_data = {1: first_page.get("data", [])}
+
+        if on_progress:
+            on_progress(1, total_pages)
+
+        if total_pages <= 1:
+            return [Video.from_vimeo_response(v) for v in all_video_data.get(1, [])]
+
+        # Fetch remaining pages concurrently
+        remaining_pages = list(range(2, total_pages + 1))
+
+        with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
+            future_to_page = {
+                executor.submit(
+                    self._fetch_page,
+                    endpoint, page, per_page, sort, direction, filter_playable
+                ): page
+                for page in remaining_pages
+            }
+
+            completed = 1  # Page 1 already done
+            for future in as_completed(future_to_page):
+                page_num = future_to_page[future]
+                completed += 1
+
+                try:
+                    result = future.result()
+                    all_video_data[page_num] = result.get("data", [])
+                    if on_progress:
+                        on_progress(completed, total_pages)
+                except Exception as e:
+                    logger.error(f"Failed to fetch page {page_num}: {e}")
+                    all_video_data[page_num] = []
+
+        # Combine results in page order
+        videos = []
+        for page_num in sorted(all_video_data.keys()):
+            for video_data in all_video_data[page_num]:
+                videos.append(Video.from_vimeo_response(video_data))
+                if limit and len(videos) >= limit:
+                    return videos
+
+        return videos
 
     def iter_all_videos(
         self,
@@ -247,27 +284,11 @@ class VimeoClient:
         direction: str = "desc",
         filter_playable: bool = True
     ) -> Generator[Video, None, None]:
-        """
-        Iterate over all videos for a user with automatic pagination.
-
-        Args:
-            user_id: User ID or 'me' for authenticated user
-            sort: Sort field
-            direction: Sort direction
-            filter_playable: Only return playable videos
-
-        Yields:
-            Video objects
-        """
+        """Iterate over all videos with automatic pagination (sequential)."""
         page = 1
+        endpoint = self._get_endpoint(user_id, "/videos")
         while True:
-            response = self.get_videos(
-                user_id=user_id,
-                page=page,
-                sort=sort,
-                direction=direction,
-                filter_playable=filter_playable
-            )
+            response = self._fetch_page(endpoint, page, 100, sort, direction, filter_playable)
 
             videos = response.get("data", [])
             if not videos:
@@ -276,7 +297,6 @@ class VimeoClient:
             for video_data in videos:
                 yield Video.from_vimeo_response(video_data)
 
-            # Check if there are more pages
             paging = response.get("paging", {})
             if not paging.get("next"):
                 break
@@ -292,25 +312,14 @@ class VimeoClient:
         filter_playable: bool = True,
         limit: int = None
     ) -> List[Video]:
-        """
-        Get all videos for a user.
-
-        Args:
-            user_id: User ID or 'me' for authenticated user
-            sort: Sort field
-            direction: Sort direction
-            filter_playable: Only return playable videos
-            limit: Maximum number of videos to return
-
-        Returns:
-            List of Video objects
-        """
-        videos = []
-        for video in self.iter_all_videos(user_id, sort, direction, filter_playable):
-            videos.append(video)
-            if limit and len(videos) >= limit:
-                break
-        return videos
+        """Get all videos (uses fast concurrent fetching)."""
+        return self.get_all_videos_fast(
+            user_id=user_id,
+            sort=sort,
+            direction=direction,
+            filter_playable=filter_playable,
+            limit=limit
+        )
 
     def get_album_videos(
         self,
@@ -319,73 +328,76 @@ class VimeoClient:
         per_page: int = None,
         page: int = 1
     ) -> Dict[str, Any]:
-        """
-        Get videos from an album/showcase.
-
-        Args:
-            album_id: Album ID
-            user_id: User ID or 'me' for authenticated user
-            per_page: Number of videos per page
-            page: Page number
-
-        Returns:
-            API response with video data
-        """
+        """Get videos from an album/showcase."""
         album_id = album_id or self._album_id
         if not album_id:
             raise VimeoAPIError("Album ID is required")
 
-        user_id = user_id or self._user_id or "me"
+        endpoint = self._get_endpoint(user_id, f"/albums/{album_id}/videos")
         per_page = min(per_page or self.DEFAULT_PER_PAGE, 100)
+        return self._fetch_page(endpoint, page, per_page)
 
-        params = {
-            "per_page": per_page,
-            "page": page,
-            "fields": "uri,name,description,duration,created_time,modified_time,"
-                      "release_time,pictures,files,play,tags,categories,privacy,"
-                      "embed,link,stats,metadata,player_embed_url"
-        }
+    def get_all_album_videos_fast(
+        self,
+        album_id: str = None,
+        user_id: str = None
+    ) -> List[Video]:
+        """Fetch all album videos using concurrent requests."""
+        album_id = album_id or self._album_id
+        if not album_id:
+            raise VimeoAPIError("Album ID is required")
 
-        return self._make_request(
-            "GET",
-            f"/users/{user_id}/albums/{album_id}/videos",
-            params=params
-        )
+        endpoint = self._get_endpoint(user_id, f"/albums/{album_id}/videos")
+
+        first_page = self._fetch_page(endpoint, 1, 100)
+        total = first_page.get("total", 0)
+        total_pages = (total + 99) // 100
+
+        all_video_data = {1: first_page.get("data", [])}
+
+        if total_pages > 1:
+            remaining = list(range(2, total_pages + 1))
+            with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
+                future_to_page = {
+                    executor.submit(self._fetch_page, endpoint, p, 100): p
+                    for p in remaining
+                }
+                for future in as_completed(future_to_page):
+                    page_num = future_to_page[future]
+                    try:
+                        result = future.result()
+                        all_video_data[page_num] = result.get("data", [])
+                    except Exception as e:
+                        logger.error(f"Failed to fetch album page {page_num}: {e}")
+
+        videos = []
+        for page_num in sorted(all_video_data.keys()):
+            for vd in all_video_data[page_num]:
+                videos.append(Video.from_vimeo_response(vd))
+        return videos
 
     def iter_album_videos(
         self,
         album_id: str = None,
         user_id: str = None
     ) -> Generator[Video, None, None]:
-        """
-        Iterate over all videos in an album with automatic pagination.
+        """Iterate over all videos in an album (sequential)."""
+        album_id = album_id or self._album_id
+        if not album_id:
+            raise VimeoAPIError("Album ID is required")
 
-        Args:
-            album_id: Album ID
-            user_id: User ID
-
-        Yields:
-            Video objects
-        """
+        endpoint = self._get_endpoint(user_id, f"/albums/{album_id}/videos")
         page = 1
         while True:
-            response = self.get_album_videos(
-                album_id=album_id,
-                user_id=user_id,
-                page=page
-            )
-
+            response = self._fetch_page(endpoint, page, 100)
             videos = response.get("data", [])
             if not videos:
                 break
-
             for video_data in videos:
                 yield Video.from_vimeo_response(video_data)
-
             paging = response.get("paging", {})
             if not paging.get("next"):
                 break
-
             page += 1
 
     def get_folder_videos(
@@ -395,73 +407,37 @@ class VimeoClient:
         per_page: int = None,
         page: int = 1
     ) -> Dict[str, Any]:
-        """
-        Get videos from a folder/project.
-
-        Args:
-            folder_id: Folder/project ID
-            user_id: User ID
-            per_page: Number of videos per page
-            page: Page number
-
-        Returns:
-            API response with video data
-        """
+        """Get videos from a folder/project."""
         folder_id = folder_id or self._folder_id
         if not folder_id:
             raise VimeoAPIError("Folder ID is required")
 
-        user_id = user_id or self._user_id or "me"
+        endpoint = self._get_endpoint(user_id, f"/projects/{folder_id}/videos")
         per_page = min(per_page or self.DEFAULT_PER_PAGE, 100)
-
-        params = {
-            "per_page": per_page,
-            "page": page,
-            "fields": "uri,name,description,duration,created_time,modified_time,"
-                      "release_time,pictures,files,play,tags,categories,privacy,"
-                      "embed,link,stats,metadata,player_embed_url"
-        }
-
-        return self._make_request(
-            "GET",
-            f"/users/{user_id}/projects/{folder_id}/videos",
-            params=params
-        )
+        return self._fetch_page(endpoint, page, per_page)
 
     def iter_folder_videos(
         self,
         folder_id: str = None,
         user_id: str = None
     ) -> Generator[Video, None, None]:
-        """
-        Iterate over all videos in a folder with automatic pagination.
+        """Iterate over all videos in a folder (sequential)."""
+        folder_id = folder_id or self._folder_id
+        if not folder_id:
+            raise VimeoAPIError("Folder ID is required")
 
-        Args:
-            folder_id: Folder ID
-            user_id: User ID
-
-        Yields:
-            Video objects
-        """
+        endpoint = self._get_endpoint(user_id, f"/projects/{folder_id}/videos")
         page = 1
         while True:
-            response = self.get_folder_videos(
-                folder_id=folder_id,
-                user_id=user_id,
-                page=page
-            )
-
+            response = self._fetch_page(endpoint, page, 100)
             videos = response.get("data", [])
             if not videos:
                 break
-
             for video_data in videos:
                 yield Video.from_vimeo_response(video_data)
-
             paging = response.get("paging", {})
             if not paging.get("next"):
                 break
-
             page += 1
 
     def get_videos_modified_since(
@@ -469,18 +445,7 @@ class VimeoClient:
         since: datetime,
         user_id: str = None
     ) -> List[Video]:
-        """
-        Get videos modified since a specific date.
-
-        Useful for incremental syncs.
-
-        Args:
-            since: Datetime to filter from
-            user_id: User ID
-
-        Returns:
-            List of videos modified since the given date
-        """
+        """Get videos modified since a specific date (for incremental sync)."""
         videos = []
         for video in self.iter_all_videos(user_id=user_id, sort="date", direction="desc"):
             if video.modified_time < since:
@@ -495,32 +460,10 @@ class VimeoClient:
         per_page: int = None,
         page: int = 1
     ) -> Dict[str, Any]:
-        """
-        Search videos by query.
-
-        Args:
-            query: Search query
-            user_id: User ID to search within
-            per_page: Number of results per page
-            page: Page number
-
-        Returns:
-            API response with search results
-        """
+        """Search videos by query."""
         per_page = min(per_page or self.DEFAULT_PER_PAGE, 100)
-
-        params = {
-            "query": query,
-            "per_page": per_page,
-            "page": page,
-            "fields": "uri,name,description,duration,created_time,modified_time,"
-                      "release_time,pictures,files,play,tags,categories,privacy,"
-                      "embed,link,stats,metadata,player_embed_url"
-        }
-
-        if user_id or self._user_id:
-            endpoint = f"/users/{user_id or self._user_id or 'me'}/videos"
-        else:
-            endpoint = "/videos"
-
-        return self._make_request("GET", endpoint, params=params)
+        endpoint = self._get_endpoint(user_id, "/videos") if (user_id or self._user_id) else "/videos"
+        return self._fetch_page(
+            endpoint, page, per_page,
+            extra_params={"query": query}
+        )
