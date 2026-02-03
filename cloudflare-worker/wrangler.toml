@@ -1,0 +1,6 @@
+name = "kmgi-roku-proxy"
+main = "worker.js"
+compatibility_date = "2026-02-03"
+
+[vars]
+# VIMEO_ACCESS_TOKEN is set as a secret, not here

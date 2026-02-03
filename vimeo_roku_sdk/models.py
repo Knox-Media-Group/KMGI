@@ -315,10 +315,22 @@ class RokuVideo:
         }
 
         if video_file:
+            # Use direct video file URL; for HLS links with auth tokens,
+            # prefer the Vimeo player URL which doesn't expire
+            video_url = video_file.url
+            video_type_str = cls._map_video_type(video_file.video_type)
+
+            # If the URL contains expiring auth tokens, use Cloudflare Worker
+            # proxy which fetches fresh URLs on each request
+            if "oauth2_token_id" in video_url or ("s=" in video_url and "hls.m3u8" in video_url):
+                vimeo_id = video.id
+                video_url = f"https://kmgi-roku-proxy.moshiu.workers.dev/play/{vimeo_id}"
+                video_type_str = "HLS"
+
             content["videos"].append({
-                "url": video_file.url,
+                "url": video_url,
                 "quality": video_file.quality.value,
-                "videoType": cls._map_video_type(video_file.video_type)
+                "videoType": video_type_str
             })
 
         # Determine video type based on duration if not specified
@@ -352,12 +364,19 @@ class RokuVideo:
             "ratingSource": "USA_TV"
         }
 
+        # Clean title - remove stray quotes
+        clean_title = (video.title or "Untitled").replace('"', '').strip()[:100]
+
+        # Clean descriptions - remove stray quotes
+        short_desc = short_desc.replace('"', '').strip()
+        long_desc = long_desc.replace('"', '').strip()
+
         return cls(
             id=f"vimeo-{video.id}",
-            title=video.title[:100] if video.title else "Untitled",
+            title=clean_title,
             short_description=short_desc,
             long_description=long_desc,
-            release_date=video.release_date.strftime("%Y-%m-%dT%H:%M:%SZ") if video.release_date else video.created_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            release_date=video.release_date.strftime("%Y-%m-%d") if video.release_date else video.created_time.strftime("%Y-%m-%d"),
             duration=video.duration,
             thumbnail=thumbnail_url,
             content=content,
