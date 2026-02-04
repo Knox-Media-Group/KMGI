@@ -180,11 +180,17 @@ class Video:
         except (ValueError, AttributeError):
             return datetime.now()
 
-    def get_best_thumbnail(self, min_width: int = 800) -> Optional[Thumbnail]:
-        """Get the best thumbnail at or above the minimum width."""
+    def get_best_thumbnail(self, min_width: int = 1280) -> Optional[Thumbnail]:
+        """Get the best thumbnail at or above the minimum width.
+        Prefers 1920x1080 for Roku HD quality, falls back to largest available."""
+        # Prefer 1920x1080 if available
+        hd_thumbs = [t for t in self.thumbnails if t.width >= 1920]
+        if hd_thumbs:
+            return min(hd_thumbs, key=lambda t: t.width)
+        # Fall back to anything >= min_width
         suitable = [t for t in self.thumbnails if t.width >= min_width]
         if suitable:
-            return min(suitable, key=lambda t: t.width)
+            return max(suitable, key=lambda t: t.width)
         elif self.thumbnails:
             return max(self.thumbnails, key=lambda t: t.width)
         return None
