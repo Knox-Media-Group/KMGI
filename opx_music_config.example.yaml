@@ -1,0 +1,58 @@
+# OPX Music Ingestion Pipeline Configuration
+# Copy to opx_music_config.yaml and fill in your values.
+
+source:
+  # Music server URL (required)
+  server_url: "https://music.example.com"
+
+  # Authentication — use EITHER api_key OR username+password
+  api_key: ""
+  username: ""
+  password: ""
+
+  # Local directory for staging downloaded files
+  download_dir: "./opx_downloads"
+
+  # HTTP timeout in seconds
+  timeout: 120
+
+  # Retry attempts for network failures (exponential backoff)
+  max_retries: 4
+
+  # Verify TLS certificates
+  verify_ssl: true
+
+wmxv:
+  # Root directory for WMXV publish folders
+  publish_root: "./wmxv_publish"
+
+  # Classification -> subfolder mapping
+  genre_folders:
+    "Hot Rap": "hot_rap"
+    "Hot R&B": "hot_rnb"
+    "Hot Pop": "hot_pop"
+    "Hot Country": "hot_country"
+    "Hot Rock": "hot_rock"
+    "Hot Latin": "hot_latin"
+    "Hot Gospel": "hot_gospel"
+    "Hot Dance": "hot_dance"
+    "Hot Jazz": "hot_jazz"
+    "Hot Classical": "hot_classical"
+    "New Releases": "new_releases"
+    "Unclassified": "unclassified"
+
+schedule:
+  enabled: true
+  cron_day: "sunday"     # Day of week for weekly job
+  cron_time: "03:00"     # HH:MM (24h)
+  run_on_start: false    # Run immediately when daemon starts
+
+# Audit log file (append-only JSONL)
+audit_log_path: "./opx_audit.log"
+
+# Pipeline state file (last-run timestamp for incremental pulls)
+state_path: "./.opx_state"
+
+# Logging
+log_level: "INFO"
+# log_file: "./opx_music.log"
