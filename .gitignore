@@ -72,6 +72,12 @@ roku_feed.json
 .vimeo_roku_cache/
 *.log
 
+# OPX Music Pipeline
+opx_music_config.yaml
+opx_downloads/
+.opx_state
+opx_audit.log
+
 # macOS
 .DS_Store
 

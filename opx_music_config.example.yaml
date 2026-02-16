@@ -10,6 +10,10 @@ source:
   username: ""
   password: ""
 
+  # Env-based secrets (recommended — avoids plaintext in config file):
+  #   password_env: "NEWMUSICSERVER_PASSWORD"   # reads from $NEWMUSICSERVER_PASSWORD
+  #   api_key_env: "OPX_SOURCE_API_KEY"         # reads from $OPX_SOURCE_API_KEY
+
   # Local directory for staging downloaded files
   download_dir: "./opx_downloads"
 
