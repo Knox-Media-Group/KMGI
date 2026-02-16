@@ -25,11 +25,23 @@ class SourceConfig:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "SourceConfig":
+        # Resolve password: prefer password_env (env var name) over plaintext
+        password = data.get("password", "")
+        password_env = data.get("password_env", "")
+        if password_env:
+            password = os.getenv(password_env, "")
+
+        # Same pattern for api_key
+        api_key = data.get("api_key", "")
+        api_key_env = data.get("api_key_env", "")
+        if api_key_env:
+            api_key = os.getenv(api_key_env, "")
+
         return cls(
             server_url=data.get("server_url", ""),
-            api_key=data.get("api_key", ""),
+            api_key=api_key,
             username=data.get("username", ""),
-            password=data.get("password", ""),
+            password=password,
             download_dir=data.get("download_dir", "./opx_downloads"),
             timeout=data.get("timeout", 120),
             max_retries=data.get("max_retries", 4),
