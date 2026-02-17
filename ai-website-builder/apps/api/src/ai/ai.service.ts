@@ -30,6 +30,34 @@ import {
 } from '@builder/shared';
 import { ImagesService } from './images.service';
 
+// AI Co-Pilot types
+export interface CopilotMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
+export interface CopilotContext {
+  siteSettings: SiteSettings;
+  currentPage: Page;
+  selectedSection?: Section;
+}
+
+export interface CopilotResponse {
+  message: string;
+  actions?: CopilotAction[];
+  suggestions?: string[];
+}
+
+export interface CopilotAction {
+  type: 'update_text' | 'update_style' | 'add_section' | 'remove_section' | 'reorder' | 'update_image';
+  target: {
+    sectionId?: string;
+    blockId?: string;
+    pageSlug?: string;
+  };
+  payload: Record<string, unknown>;
+}
+
 interface AIGeneratedContent {
   home: {
     heroHeadline: string;
@@ -895,5 +923,329 @@ Respond ONLY with valid JSON array.`;
       console.error('Failed to generate variations:', error);
       return [section, { ...section, id: generateId() }, { ...section, id: generateId() }];
     }
+  }
+
+  // ============================================
+  // AI Co-Pilot - Real-time editing assistant
+  // ============================================
+
+  async copilotChat(
+    messages: CopilotMessage[],
+    context: CopilotContext,
+  ): Promise<CopilotResponse> {
+    if (!this.openai) {
+      return this.handleCopilotFallback(messages, context);
+    }
+
+    const systemPrompt = this.buildCopilotSystemPrompt(context);
+
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-4-turbo-preview',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...messages.map(m => ({ role: m.role as 'user' | 'assistant' | 'system', content: m.content })),
+        ],
+        temperature: 0.7,
+        response_format: { type: 'json_object' },
+      });
+
+      const content = response.choices[0]?.message?.content || '';
+      const parsed = JSON.parse(content);
+
+      return {
+        message: parsed.message || 'I can help you improve your website.',
+        actions: parsed.actions || [],
+        suggestions: parsed.suggestions || [],
+      };
+    } catch (error) {
+      console.error('Copilot chat error:', error);
+      return this.handleCopilotFallback(messages, context);
+    }
+  }
+
+  private buildCopilotSystemPrompt(context: CopilotContext): string {
+    const sectionInfo = context.selectedSection
+      ? `\nCurrently selected section: ${context.selectedSection.type} (ID: ${context.selectedSection.id})`
+      : '';
+
+    return `You are an AI Co-Pilot for a website builder. Help users edit and improve their website in real-time.
+
+BUSINESS CONTEXT:
+- Business: ${context.siteSettings.businessName}
+- Industry: ${context.siteSettings.industry}
+- Style: ${context.siteSettings.stylePreset}
+- Description: ${context.siteSettings.description || 'Not provided'}
+
+CURRENT PAGE: ${context.currentPage.title} (/${context.currentPage.slug})
+Sections on page: ${context.currentPage.sections.map(s => s.type).join(', ')}${sectionInfo}
+
+You can perform these actions:
+1. update_text - Change text content in a block
+2. update_style - Modify section styling (colors, padding, dark mode)
+3. add_section - Add a new section to the page
+4. remove_section - Remove a section
+5. reorder - Move sections up or down
+6. update_image - Suggest new image search terms
+
+RESPONSE FORMAT (JSON only):
+{
+  "message": "Your helpful response to the user",
+  "actions": [
+    {
+      "type": "update_text",
+      "target": { "sectionId": "...", "blockId": "..." },
+      "payload": { "content": "New text content" }
+    }
+  ],
+  "suggestions": ["Quick suggestion 1", "Quick suggestion 2", "Quick suggestion 3"]
+}
+
+Be concise, helpful, and proactive. Suggest improvements based on industry best practices.
+If the user asks to change text, provide the action with the exact new content.
+If the user asks a question, answer it and suggest related improvements.
+Always provide 2-3 quick suggestions for what they could do next.`;
+  }
+
+  private handleCopilotFallback(messages: CopilotMessage[], context: CopilotContext): CopilotResponse {
+    const lastMessage = messages[messages.length - 1]?.content.toLowerCase() || '';
+
+    if (lastMessage.includes('headline') || lastMessage.includes('title')) {
+      return {
+        message: `I can help you improve your headlines! For ${context.siteSettings.industry} businesses, effective headlines should be clear, benefit-focused, and include your unique value proposition.`,
+        suggestions: [
+          'Make the headline more action-oriented',
+          'Add your key differentiator',
+          'Include a compelling benefit',
+        ],
+      };
+    }
+
+    if (lastMessage.includes('color') || lastMessage.includes('style')) {
+      return {
+        message: `Your current style preset is "${context.siteSettings.stylePreset}". I can help adjust colors and styling to better match your brand.`,
+        suggestions: [
+          'Try dark mode for this section',
+          'Adjust the accent color',
+          'Change the section padding',
+        ],
+      };
+    }
+
+    if (lastMessage.includes('add') || lastMessage.includes('new section')) {
+      return {
+        message: `I can help you add new sections! Based on your ${context.siteSettings.industry} business, I recommend adding sections that showcase your expertise and build trust.`,
+        suggestions: [
+          'Add a testimonials section',
+          'Add a FAQ section',
+          'Add a stats/numbers section',
+        ],
+      };
+    }
+
+    return {
+      message: `I'm your AI Co-Pilot, ready to help you improve "${context.siteSettings.businessName}"! I can help you edit text, adjust styles, add sections, or suggest improvements.`,
+      suggestions: [
+        'Improve my headline',
+        'Add a new section',
+        'Make this section stand out',
+      ],
+    };
+  }
+
+  async copilotSuggestImprovements(context: CopilotContext): Promise<CopilotResponse> {
+    if (!this.openai) {
+      return {
+        message: `Here are some suggestions to improve your ${context.currentPage.title} page:`,
+        suggestions: this.getDefaultImprovementSuggestions(context),
+      };
+    }
+
+    const prompt = `Analyze this website page and suggest 5 specific improvements.
+
+Business: ${context.siteSettings.businessName}
+Industry: ${context.siteSettings.industry}
+Page: ${context.currentPage.title}
+Current sections: ${JSON.stringify(context.currentPage.sections.map(s => ({
+      type: s.type,
+      hasText: s.blocks.some(b => b.type === 'text'),
+      hasImage: s.blocks.some(b => b.type === 'image'),
+    })))}
+
+Respond with JSON:
+{
+  "message": "Brief analysis of the page",
+  "suggestions": ["Specific improvement 1", "Specific improvement 2", ...]
+}`;
+
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+        response_format: { type: 'json_object' },
+      });
+
+      const content = response.choices[0]?.message?.content || '';
+      return JSON.parse(content);
+    } catch {
+      return {
+        message: `Here are some suggestions to improve your ${context.currentPage.title} page:`,
+        suggestions: this.getDefaultImprovementSuggestions(context),
+      };
+    }
+  }
+
+  private getDefaultImprovementSuggestions(context: CopilotContext): string[] {
+    const suggestions: string[] = [];
+    const sectionTypes = context.currentPage.sections.map(s => s.type);
+
+    if (!sectionTypes.includes('testimonials')) {
+      suggestions.push('Add customer testimonials to build trust');
+    }
+    if (!sectionTypes.includes('faq')) {
+      suggestions.push('Add a FAQ section to answer common questions');
+    }
+    if (!sectionTypes.includes('stats')) {
+      suggestions.push('Add statistics to showcase your achievements');
+    }
+    if (!sectionTypes.includes('cta')) {
+      suggestions.push('Add a clear call-to-action section');
+    }
+    suggestions.push('Ensure all images have descriptive alt text for SEO');
+    suggestions.push('Make headlines more compelling with action words');
+
+    return suggestions.slice(0, 5);
+  }
+
+  async copilotRewriteText(
+    text: string,
+    style: 'professional' | 'casual' | 'persuasive' | 'concise',
+    context: CopilotContext,
+  ): Promise<{ original: string; rewritten: string; alternatives: string[] }> {
+    if (!this.openai) {
+      return { original: text, rewritten: text, alternatives: [text] };
+    }
+
+    const prompt = `Rewrite this text for a ${context.siteSettings.industry} business website.
+Style: ${style}
+Original: "${text}"
+
+Respond with JSON:
+{
+  "rewritten": "The best rewritten version",
+  "alternatives": ["Alternative 1", "Alternative 2"]
+}`;
+
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.8,
+        response_format: { type: 'json_object' },
+      });
+
+      const content = response.choices[0]?.message?.content || '';
+      const parsed = JSON.parse(content);
+
+      return {
+        original: text,
+        rewritten: parsed.rewritten || text,
+        alternatives: parsed.alternatives || [],
+      };
+    } catch {
+      return { original: text, rewritten: text, alternatives: [] };
+    }
+  }
+
+  // ============================================
+  // JSON-LD Schema Markup for SEO
+  // ============================================
+
+  generateSchemaMarkup(settings: SiteSettings, page: Page): Record<string, unknown>[] {
+    const schemas: Record<string, unknown>[] = [];
+
+    // Organization schema
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'LocalBusiness',
+      name: settings.businessName,
+      description: settings.description || `${settings.businessName} - ${settings.industry} services`,
+      url: settings.websiteUrl || '',
+      telephone: settings.contactPhone,
+      email: settings.contactEmail,
+      address: settings.address ? {
+        '@type': 'PostalAddress',
+        streetAddress: settings.address,
+        addressLocality: settings.city,
+        addressRegion: settings.state,
+        postalCode: settings.zip,
+        addressCountry: 'US',
+      } : undefined,
+      openingHoursSpecification: settings.businessHours?.map(day => ({
+        '@type': 'OpeningHoursSpecification',
+        dayOfWeek: day.day,
+        opens: day.open,
+        closes: day.close,
+      })).filter(d => d.opens && d.closes),
+      sameAs: settings.socialLinks?.map(l => l.url).filter(Boolean),
+    });
+
+    // Page-specific schemas
+    if (page.slug === 'home') {
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: settings.businessName,
+        url: settings.websiteUrl || '',
+      });
+    }
+
+    if (page.slug === 'services') {
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'Service',
+        provider: { '@type': 'LocalBusiness', name: settings.businessName },
+        serviceType: settings.industry,
+        areaServed: settings.city && settings.state ? {
+          '@type': 'City',
+          name: `${settings.city}, ${settings.state}`,
+        } : undefined,
+      });
+    }
+
+    if (page.slug === 'faq') {
+      const faqSection = page.sections.find(s => s.type === 'faq');
+      if (faqSection) {
+        const accordionBlock = faqSection.blocks.find(b => b.type === 'accordion');
+        if (accordionBlock) {
+          const props = accordionBlock.props as AccordionProps;
+          schemas.push({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: props.items.map(item => ({
+              '@type': 'Question',
+              name: item.question,
+              acceptedAnswer: { '@type': 'Answer', text: item.answer },
+            })),
+          });
+        }
+      }
+    }
+
+    if (page.slug === 'contact') {
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'ContactPage',
+        mainEntity: {
+          '@type': 'LocalBusiness',
+          name: settings.businessName,
+          telephone: settings.contactPhone,
+          email: settings.contactEmail,
+        },
+      });
+    }
+
+    return schemas;
   }
 }

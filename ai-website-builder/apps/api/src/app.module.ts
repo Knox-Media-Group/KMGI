@@ -8,6 +8,8 @@ import { JobsModule } from './jobs/jobs.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { WordPressModule } from './wordpress/wordpress.module';
 import { AiModule } from './ai/ai.module';
+import { PerformanceModule } from './performance/performance.module';
+import { ApiModule } from './api/api.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -25,6 +27,8 @@ import { HealthController } from './health.controller';
     JobsModule,
     WordPressModule,
     AiModule,
+    PerformanceModule,
+    ApiModule,
   ],
 })
 export class AppModule {}

@@ -161,6 +161,209 @@ export class WordPressService {
     }
   }
 
+  // ============================================
+  // WooCommerce E-commerce Integration
+  // ============================================
+
+  async setupWooCommerce(wpSiteId: number, wpSiteUrl?: string): Promise<void> {
+    try {
+      const urlFlag = wpSiteUrl ? `--url=${wpSiteUrl}` : `--url=${this.wpPublicUrl}`;
+
+      // Install and activate WooCommerce
+      await this.runWpCli(`plugin install woocommerce --activate ${urlFlag}`);
+
+      // Run WooCommerce setup wizard silently
+      await this.runWpCli(`option update woocommerce_onboarding_profile '{"skipped":true}' ${urlFlag}`);
+
+      // Set default WooCommerce settings
+      await this.runWpCli(`option update woocommerce_currency 'USD' ${urlFlag}`);
+      await this.runWpCli(`option update woocommerce_currency_pos 'left' ${urlFlag}`);
+      await this.runWpCli(`option update woocommerce_price_thousand_sep ',' ${urlFlag}`);
+      await this.runWpCli(`option update woocommerce_price_decimal_sep '.' ${urlFlag}`);
+      await this.runWpCli(`option update woocommerce_price_num_decimals '2' ${urlFlag}`);
+
+      // Create essential WooCommerce pages
+      await this.runWpCli(`wc --user=1 tool run install_pages ${urlFlag}`);
+
+      // Enable guest checkout
+      await this.runWpCli(`option update woocommerce_enable_guest_checkout 'yes' ${urlFlag}`);
+
+      // Set up payment gateway (manual payments for MVP)
+      await this.runWpCli(`option update woocommerce_cod_enabled 'yes' ${urlFlag}`);
+
+      console.log(`WooCommerce setup complete for site ${wpSiteId}`);
+    } catch (error) {
+      if (this.mockMode) {
+        console.log('MOCK MODE: Simulating WooCommerce setup');
+        return;
+      }
+      console.error('WooCommerce setup error:', error);
+      throw error;
+    }
+  }
+
+  async createWooCommerceProduct(
+    wpSiteUrl: string,
+    product: {
+      name: string;
+      price: string;
+      description: string;
+      shortDescription?: string;
+      image?: string;
+      categories?: string[];
+      sku?: string;
+      stockQuantity?: number;
+      salePrice?: string;
+    },
+  ): Promise<number> {
+    try {
+      const urlFlag = `--url=${wpSiteUrl}`;
+
+      // Build product creation command
+      let productCmd = `wc product create --user=1`;
+      productCmd += ` --name="${this.escapeShell(product.name)}"`;
+      productCmd += ` --regular_price="${product.price}"`;
+      productCmd += ` --description="${this.escapeShell(product.description)}"`;
+
+      if (product.shortDescription) {
+        productCmd += ` --short_description="${this.escapeShell(product.shortDescription)}"`;
+      }
+      if (product.sku) {
+        productCmd += ` --sku="${product.sku}"`;
+      }
+      if (product.stockQuantity !== undefined) {
+        productCmd += ` --manage_stock=true --stock_quantity=${product.stockQuantity}`;
+      }
+      if (product.salePrice) {
+        productCmd += ` --sale_price="${product.salePrice}"`;
+      }
+
+      productCmd += ` --porcelain ${urlFlag}`;
+
+      const productId = await this.runWpCli(productCmd);
+
+      // Add product image if provided
+      if (product.image) {
+        await this.runWpCli(
+          `post meta update ${productId} _thumbnail_id "${product.image}" ${urlFlag}`,
+        );
+      }
+
+      // Add categories if provided
+      if (product.categories && product.categories.length > 0) {
+        for (const category of product.categories) {
+          // Create or get category
+          try {
+            await this.runWpCli(
+              `wc product_cat create --user=1 --name="${this.escapeShell(category)}" ${urlFlag}`,
+            );
+          } catch {
+            // Category might already exist, continue
+          }
+        }
+      }
+
+      console.log(`Created WooCommerce product ${productId}: ${product.name}`);
+      return parseInt(productId, 10);
+    } catch (error) {
+      if (this.mockMode) {
+        console.log('MOCK MODE: Simulating product creation:', product.name);
+        return Math.floor(Math.random() * 10000);
+      }
+      throw error;
+    }
+  }
+
+  async setupWooCommercePayments(
+    wpSiteUrl: string,
+    settings: {
+      stripeEnabled?: boolean;
+      stripePublishableKey?: string;
+      stripeSecretKey?: string;
+      paypalEnabled?: boolean;
+      paypalEmail?: string;
+    },
+  ): Promise<void> {
+    try {
+      const urlFlag = `--url=${wpSiteUrl}`;
+
+      // Setup Stripe if configured
+      if (settings.stripeEnabled && settings.stripePublishableKey && settings.stripeSecretKey) {
+        // Install Stripe gateway
+        await this.runWpCli(`plugin install woocommerce-gateway-stripe --activate ${urlFlag}`);
+
+        // Configure Stripe settings
+        await this.runWpCli(`option update woocommerce_stripe_settings '${JSON.stringify({
+          enabled: 'yes',
+          testmode: 'no',
+          publishable_key: settings.stripePublishableKey,
+          secret_key: settings.stripeSecretKey,
+          payment_request: 'yes',
+          saved_cards: 'yes',
+        })}' ${urlFlag}`);
+
+        console.log('Stripe payment gateway configured');
+      }
+
+      // Setup PayPal if configured
+      if (settings.paypalEnabled && settings.paypalEmail) {
+        // Install PayPal gateway
+        await this.runWpCli(`plugin install woocommerce-paypal-payments --activate ${urlFlag}`);
+
+        // Configure PayPal settings
+        await this.runWpCli(`option update woocommerce_ppcp-gateway_settings '${JSON.stringify({
+          enabled: 'yes',
+          merchant_email: settings.paypalEmail,
+        })}' ${urlFlag}`);
+
+        console.log('PayPal payment gateway configured');
+      }
+    } catch (error) {
+      if (this.mockMode) {
+        console.log('MOCK MODE: Simulating payment setup');
+        return;
+      }
+      console.error('Payment setup error:', error);
+    }
+  }
+
+  async getWooCommerceStats(wpSiteUrl: string): Promise<{
+    totalOrders: number;
+    totalRevenue: string;
+    totalProducts: number;
+    pendingOrders: number;
+  }> {
+    try {
+      const urlFlag = `--url=${wpSiteUrl}`;
+
+      const [ordersCount, productsCount, revenue] = await Promise.all([
+        this.runWpCli(`wc report orders_totals --user=1 ${urlFlag} --format=json`),
+        this.runWpCli(`post list --post_type=product --post_status=publish --format=count ${urlFlag}`),
+        this.runWpCli(`wc report sales --user=1 ${urlFlag} --format=json`),
+      ]);
+
+      const orders = JSON.parse(ordersCount || '[]');
+      const salesReport = JSON.parse(revenue || '{}');
+
+      return {
+        totalOrders: orders.reduce((acc: number, o: { count: number }) => acc + (o.count || 0), 0),
+        totalRevenue: salesReport.total_sales || '0.00',
+        totalProducts: parseInt(productsCount, 10) || 0,
+        pendingOrders: orders.find((o: { slug: string }) => o.slug === 'pending')?.count || 0,
+      };
+    } catch (error) {
+      if (this.mockMode) {
+        return {
+          totalOrders: 0,
+          totalRevenue: '0.00',
+          totalProducts: 0,
+          pendingOrders: 0,
+        };
+      }
+      throw error;
+    }
+  }
+
   async publishVersion(wpSiteId: number, content: SiteContent, wpSiteUrl?: string): Promise<void> {
     try {
       const urlFlag = wpSiteUrl ? `--url=${wpSiteUrl}` : `--url=${this.wpPublicUrl}`;
@@ -739,5 +942,147 @@ Your browser does not support the video tag.
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  // ============================================
+  // Staging Environment Support
+  // ============================================
+
+  async createStagingSite(wpSiteId: number, wpSiteUrl: string): Promise<{
+    stagingSiteId: number;
+    stagingUrl: string;
+  }> {
+    try {
+      // Get original site slug
+      const originalSlug = wpSiteUrl.split('/').pop() || 'site';
+      const stagingSlug = `staging-${originalSlug}`;
+      const stagingUrl = `${this.wpPublicUrl}/${stagingSlug}`;
+
+      // Create staging subsite
+      const createOutput = await this.runWpCli(
+        `site create --slug="${stagingSlug}" --title="Staging - ${originalSlug}" --email="staging@1smartersite.com" --porcelain`,
+      );
+
+      const stagingSiteId = parseInt(createOutput, 10);
+      if (isNaN(stagingSiteId)) {
+        throw new Error(`Failed to create staging site: ${createOutput}`);
+      }
+
+      // Copy content from production to staging
+      await this.copySiteContent(wpSiteUrl, stagingUrl);
+
+      // Set staging flag
+      await this.runWpCli(`option update is_staging_site 1 --url=${stagingUrl}`);
+
+      console.log(`Created staging site ${stagingSiteId} at ${stagingUrl}`);
+
+      return { stagingSiteId, stagingUrl };
+    } catch (error) {
+      if (this.mockMode) {
+        console.log('MOCK MODE: Simulating staging site creation');
+        return {
+          stagingSiteId: Math.floor(Math.random() * 10000),
+          stagingUrl: `${this.wpMultisiteUrl}/staging-site`,
+        };
+      }
+      throw error;
+    }
+  }
+
+  async copySiteContent(sourceUrl: string, targetUrl: string): Promise<void> {
+    try {
+      // Export content from source
+      const exportFile = `/tmp/site-export-${Date.now()}.xml`;
+      await this.runWpCli(`export --url=${sourceUrl} --output=${exportFile}`);
+
+      // Import content to target
+      await this.runWpCli(`import ${exportFile} --authors=skip --url=${targetUrl}`);
+
+      // Copy theme mods and custom CSS
+      const themeMods = await this.runWpCli(`theme mod list --url=${sourceUrl} --format=json`);
+      if (themeMods) {
+        const mods = JSON.parse(themeMods);
+        for (const mod of mods) {
+          await this.runWpCli(`theme mod set ${mod.key} '${this.escapeShell(mod.value)}' --url=${targetUrl}`);
+        }
+      }
+
+      console.log(`Content copied from ${sourceUrl} to ${targetUrl}`);
+    } catch (error) {
+      console.error('Failed to copy site content:', error);
+      if (!this.mockMode) throw error;
+    }
+  }
+
+  async promoteStagingToProduction(
+    stagingSiteUrl: string,
+    productionSiteUrl: string,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      // Copy staging content to production
+      await this.copySiteContent(stagingSiteUrl, productionSiteUrl);
+
+      // Clear production cache
+      await this.runWpCli(`cache flush --url=${productionSiteUrl}`);
+
+      console.log(`Promoted staging ${stagingSiteUrl} to production ${productionSiteUrl}`);
+
+      return {
+        success: true,
+        message: 'Staging site promoted to production successfully',
+      };
+    } catch (error) {
+      if (this.mockMode) {
+        return {
+          success: true,
+          message: 'MOCK: Staging site would be promoted to production',
+        };
+      }
+      return {
+        success: false,
+        message: `Failed to promote staging: ${error}`,
+      };
+    }
+  }
+
+  async deleteStagingSite(stagingSiteId: number): Promise<void> {
+    try {
+      await this.runWpCli(`site delete ${stagingSiteId} --yes`);
+      console.log(`Deleted staging site ${stagingSiteId}`);
+    } catch (error) {
+      if (this.mockMode) {
+        console.log('MOCK MODE: Simulating staging site deletion');
+        return;
+      }
+      throw error;
+    }
+  }
+
+  async getStagingStatus(wpSiteUrl: string): Promise<{
+    hasStagingSite: boolean;
+    stagingUrl?: string;
+    stagingCreatedAt?: Date;
+    lastSyncedAt?: Date;
+  }> {
+    try {
+      const originalSlug = wpSiteUrl.split('/').pop() || 'site';
+      const stagingSlug = `staging-${originalSlug}`;
+
+      // Check if staging site exists
+      const stagingSites = await this.runWpCli(`site list --field=url`);
+
+      if (stagingSites && stagingSites.includes(stagingSlug)) {
+        return {
+          hasStagingSite: true,
+          stagingUrl: `${this.wpPublicUrl}/${stagingSlug}`,
+          stagingCreatedAt: new Date(),
+          lastSyncedAt: new Date(),
+        };
+      }
+
+      return { hasStagingSite: false };
+    } catch {
+      return { hasStagingSite: false };
+    }
   }
 }

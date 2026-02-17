@@ -133,3 +133,120 @@ export const billingApi = {
   createPortal: (token: string) =>
     api<{ portalUrl: string }>('/billing/portal', { method: 'POST', token }),
 };
+
+// AI Co-Pilot endpoints
+export interface CopilotMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
+export interface CopilotAction {
+  type: 'update_text' | 'update_style' | 'add_section' | 'remove_section' | 'reorder' | 'update_image';
+  target: {
+    sectionId?: string;
+    blockId?: string;
+    pageSlug?: string;
+  };
+  payload: Record<string, unknown>;
+}
+
+export interface CopilotResponse {
+  message: string;
+  actions?: CopilotAction[];
+  suggestions?: string[];
+}
+
+export const copilotApi = {
+  chat: (messages: CopilotMessage[], context: unknown, token: string) =>
+    api<CopilotResponse>('/ai/copilot/chat', {
+      method: 'POST',
+      body: { messages, context },
+      token,
+    }),
+
+  suggest: (context: unknown, token: string) =>
+    api<CopilotResponse>('/ai/copilot/suggest', {
+      method: 'POST',
+      body: { context },
+      token,
+    }),
+
+  rewrite: (text: string, style: string, context: unknown, token: string) =>
+    api<{ original: string; rewritten: string; alternatives: string[] }>('/ai/copilot/rewrite', {
+      method: 'POST',
+      body: { text, style, context },
+      token,
+    }),
+};
+
+// Performance API
+export interface PageSpeedResult {
+  performance: number;
+  accessibility: number;
+  bestPractices: number;
+  seo: number;
+  fcp: number;
+  lcp: number;
+  tbt: number;
+  cls: number;
+  speedIndex: number;
+  ttfb: number;
+  recommendations: Array<{
+    id: string;
+    title: string;
+    description: string;
+    impact: 'high' | 'medium' | 'low';
+    category: string;
+    savings?: string;
+  }>;
+}
+
+export interface CDNConfig {
+  enabled: boolean;
+  provider: string;
+  cacheEnabled: boolean;
+  minifyHtml: boolean;
+  minifyCss: boolean;
+  minifyJs: boolean;
+  imageOptimization: boolean;
+  lazyLoading: boolean;
+  preloadFonts: boolean;
+}
+
+export interface PerformanceReport {
+  siteId: string;
+  url: string;
+  timestamp: string;
+  desktop: PageSpeedResult;
+  mobile: PageSpeedResult;
+  cdnConfig: CDNConfig;
+  overallScore: number;
+}
+
+export const performanceApi = {
+  analyze: (url: string, token: string) =>
+    api<{ desktop: PageSpeedResult; mobile: PageSpeedResult }>(`/performance/analyze?url=${encodeURIComponent(url)}`, { token }),
+
+  getReport: (siteId: string, url: string, token: string) =>
+    api<PerformanceReport>(`/performance/report/${siteId}?url=${encodeURIComponent(url)}`, { token }),
+
+  getGrade: (score: number, token: string) =>
+    api<{ grade: string; color: string; label: string }>(`/performance/grade/${score}`, { token }),
+
+  optimize: (siteId: string, config: Partial<CDNConfig>, token: string) =>
+    api<{ success: boolean; message: string }>(`/performance/${siteId}/optimize`, {
+      method: 'POST',
+      body: { config },
+      token,
+    }),
+
+  purgeCache: (siteId: string, paths: string[] | undefined, token: string) =>
+    api<{ success: boolean; message: string }>(`/performance/${siteId}/purge`, {
+      method: 'POST',
+      body: { paths },
+      token,
+    }),
+
+  getCDNConfig: (token: string) =>
+    api<CDNConfig>('/performance/cdn-config', { token }),
+};

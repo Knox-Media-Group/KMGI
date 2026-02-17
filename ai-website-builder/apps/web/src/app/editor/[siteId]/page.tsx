@@ -25,8 +25,11 @@ import {
   Image as ImageIcon,
   FileText,
   Target,
-  List
+  List,
+  Bot,
 } from 'lucide-react';
+import { AICopilot } from '@/components/AICopilot';
+import type { CopilotAction } from '@/lib/api';
 import { useAuthStore, useEditorStore } from '@/lib/store';
 import { sitesApi } from '@/lib/api';
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
@@ -80,6 +83,7 @@ export default function EditorPage() {
   const [showSectionPicker, setShowSectionPicker] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [showCopilot, setShowCopilot] = useState(false);
 
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -209,6 +213,15 @@ export default function EditorPage() {
     saveSnapshot();
   };
 
+  const handleCopilotAction = (action: CopilotAction) => {
+    if (action.type === 'update_text' && action.target.sectionId && action.target.blockId) {
+      const payload = action.payload as { content: string };
+      updateBlock(action.target.sectionId, action.target.blockId, { content: payload.content });
+      saveSnapshot();
+    }
+    // Handle other action types as needed
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
@@ -223,6 +236,7 @@ export default function EditorPage() {
   }
 
   const currentPage = pages[selectedPageIndex];
+  const selectedSection = currentPage?.sections.find(s => s.id === selectedSectionId);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
@@ -315,6 +329,20 @@ export default function EditorPage() {
               title="Save (Ctrl+S)"
             >
               <Save className="w-4 h-4" />
+            </button>
+
+            {/* AI Co-Pilot Button */}
+            <button
+              onClick={() => setShowCopilot(!showCopilot)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                showCopilot
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600'
+              }`}
+              title="AI Co-Pilot"
+            >
+              <Bot className="w-4 h-4" />
+              <span className="hidden sm:inline">AI Co-Pilot</span>
             </button>
 
             {/* Done Button */}
@@ -426,6 +454,19 @@ export default function EditorPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* AI Co-Pilot Panel */}
+      {token && settings && currentPage && (
+        <AICopilot
+          isOpen={showCopilot}
+          onClose={() => setShowCopilot(false)}
+          token={token}
+          siteSettings={settings}
+          currentPage={currentPage}
+          selectedSection={selectedSection}
+          onApplyAction={handleCopilotAction}
+        />
       )}
     </div>
   );

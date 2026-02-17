@@ -84,7 +84,7 @@ export interface StripeSubscription {
 // PAGE SCHEMA - Platform Agnostic JSON
 // ============================================
 
-// Extended section types for 5-page website
+// Extended section types for 5-page website + e-commerce
 export type SectionType =
   | 'hero'
   | 'about'
@@ -105,7 +105,13 @@ export type SectionType =
   | 'businessHours'
   | 'products'
   | 'stats'
-  | 'pricing';
+  | 'pricing'
+  // E-commerce sections
+  | 'shop'
+  | 'productGrid'
+  | 'productFeature'
+  | 'cart'
+  | 'checkout';
 
 // Extended block types
 export type BlockType =
@@ -124,7 +130,12 @@ export type BlockType =
   | 'timelineItem'
   | 'video'
   | 'divider'
-  | 'spacer';
+  | 'spacer'
+  // E-commerce block types
+  | 'product'
+  | 'productCard'
+  | 'addToCart'
+  | 'priceDisplay';
 
 // ============================================
 // BLOCK PROPS - Data structures for each block
@@ -284,6 +295,73 @@ export interface SpacerProps {
   height: 'sm' | 'md' | 'lg' | 'xl';
 }
 
+// ============================================
+// E-COMMERCE TYPES
+// ============================================
+
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
+  shortDescription?: string;
+  price: string;
+  salePrice?: string;
+  image: string;
+  images?: string[];
+  category?: string;
+  categories?: string[];
+  sku?: string;
+  stockQuantity?: number;
+  inStock?: boolean;
+  featured?: boolean;
+  badge?: string;
+  rating?: number;
+  reviewCount?: number;
+}
+
+export interface ProductProps {
+  product: Product;
+  showDescription?: boolean;
+  showPrice?: boolean;
+  showAddToCart?: boolean;
+  layout?: 'card' | 'horizontal' | 'featured';
+}
+
+export interface ProductCardProps {
+  product: Product;
+  showBadge?: boolean;
+  showRating?: boolean;
+  quickView?: boolean;
+}
+
+export interface AddToCartProps {
+  productId: string;
+  buttonText?: string;
+  variant?: 'primary' | 'secondary' | 'outline';
+  showQuantity?: boolean;
+}
+
+export interface PriceDisplayProps {
+  price: string;
+  salePrice?: string;
+  currency?: string;
+  size?: 'sm' | 'md' | 'lg';
+}
+
+export interface EcommerceSettings {
+  enabled: boolean;
+  currency: string;
+  currencySymbol: string;
+  taxEnabled?: boolean;
+  taxRate?: number;
+  shippingEnabled?: boolean;
+  freeShippingThreshold?: number;
+  stripeEnabled?: boolean;
+  stripePublishableKey?: string;
+  paypalEnabled?: boolean;
+  paypalEmail?: string;
+}
+
 export type BlockProps =
   | TextProps
   | ImageProps
@@ -408,6 +486,7 @@ export interface SiteSettings {
   businessHours?: BusinessDay[];
   darkMode?: boolean;
   animations?: boolean;
+  websiteUrl?: string;
 }
 
 export type StylePreset = 'modern' | 'classic' | 'bold' | 'minimal' | 'playful' | 'professional';
