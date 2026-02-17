@@ -2,7 +2,37 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { SiteContent, Page, Section, Block, TextProps, ImageProps, ButtonProps, ListProps, ListItem, SiteSettings } from '@builder/shared';
+import {
+  SiteContent,
+  Page,
+  Section,
+  Block,
+  TextProps,
+  ImageProps,
+  ButtonProps,
+  ListProps,
+  ListItem,
+  SiteSettings,
+  FormProps,
+  FormField,
+  AccordionProps,
+  AccordionItem,
+  MapProps,
+  SocialProps,
+  SocialLink,
+  HoursProps,
+  BusinessDay,
+  CardProps,
+  StatProps,
+  TeamMemberProps,
+  TimelineItemProps,
+  VideoProps,
+  DividerProps,
+  SpacerProps,
+  SiteNavigation,
+  SiteFooter,
+  PageMeta,
+} from '@builder/shared';
 import { StylesService } from './styles.service';
 
 const execAsync = promisify(exec);
@@ -138,9 +168,9 @@ export class WordPressService {
       // Inject premium CSS first
       await this.injectPremiumCSS(content.settings, urlFlag);
 
+      // Publish all pages
       for (const page of content.pages) {
-        const htmlContent = this.compilePageToHtml(page, content.settings.accentColor);
-        const gutenbergBlocks = this.compilePageToGutenberg(page, content.settings.accentColor);
+        const gutenbergBlocks = this.compilePageToGutenberg(page, content.settings);
 
         // Check if page exists
         const existingPages = await this.runWpCli(
@@ -159,6 +189,11 @@ export class WordPressService {
             `post create --post_type=page --post_title="${page.title}" --post_name="${page.slug}" --post_content='${this.escapeShell(gutenbergBlocks)}' --post_status=publish ${urlFlag}`,
           );
         }
+
+        // Set SEO meta tags if available
+        if (page.meta) {
+          await this.setPageMeta(page.slug, page.meta, urlFlag);
+        }
       }
 
       // Set home page
@@ -171,6 +206,11 @@ export class WordPressService {
           await this.runWpCli(`option update show_on_front page ${urlFlag}`);
           await this.runWpCli(`option update page_on_front ${homePageId.split(' ')[0]} ${urlFlag}`);
         }
+      }
+
+      // Create navigation menu
+      if (content.navigation) {
+        await this.createNavigationMenu(content.navigation, urlFlag);
       }
 
       console.log(`Published ${content.pages.length} pages to WordPress site ${wpSiteId}`);
@@ -213,106 +253,483 @@ export class WordPressService {
     }
   }
 
+  /**
+   * Set page SEO meta tags
+   */
+  private async setPageMeta(slug: string, meta: PageMeta, urlFlag: string): Promise<void> {
+    try {
+      const pageId = await this.runWpCli(
+        `post list --post_type=page --name="${slug}" --format=ids ${urlFlag}`,
+      );
+      if (pageId) {
+        const id = pageId.split(' ')[0];
+        // Set Yoast SEO fields if available, otherwise use post meta
+        await this.runWpCli(`post meta update ${id} _yoast_wpseo_title '${this.escapeShell(meta.title)}' ${urlFlag}`);
+        await this.runWpCli(`post meta update ${id} _yoast_wpseo_metadesc '${this.escapeShell(meta.description)}' ${urlFlag}`);
+      }
+    } catch (error) {
+      console.error('Failed to set page meta:', error);
+    }
+  }
+
+  /**
+   * Create navigation menu in WordPress
+   */
+  private async createNavigationMenu(navigation: SiteNavigation, urlFlag: string): Promise<void> {
+    try {
+      // Create or get primary menu
+      const menuName = 'Primary Menu';
+      let menuId: string;
+
+      try {
+        const existingMenu = await this.runWpCli(
+          `menu list --format=ids ${urlFlag}`,
+        );
+        if (existingMenu) {
+          menuId = existingMenu.split(' ')[0];
+        } else {
+          menuId = await this.runWpCli(
+            `menu create "${menuName}" --porcelain ${urlFlag}`,
+          );
+        }
+      } catch {
+        menuId = await this.runWpCli(
+          `menu create "${menuName}" --porcelain ${urlFlag}`,
+        );
+      }
+
+      // Add menu items
+      for (const item of navigation.items) {
+        await this.runWpCli(
+          `menu item add-custom ${menuId} "${item.label}" "${item.href}" ${urlFlag}`,
+        );
+      }
+
+      // Assign to primary location
+      await this.runWpCli(
+        `menu location assign ${menuId} primary ${urlFlag}`,
+      );
+
+      console.log('Navigation menu created successfully');
+    } catch (error) {
+      console.error('Failed to create navigation menu:', error);
+    }
+  }
+
   private escapeShell(str: string): string {
     return str.replace(/'/g, "'\\''");
   }
 
-  private compilePageToHtml(page: Page, accentColor: string): string {
-    return page.sections.map((section: Section) => this.compileSectionToHtml(section, accentColor)).join('\n');
+  private compilePageToGutenberg(page: Page, settings: SiteSettings): string {
+    return page.sections.map((section: Section) => this.compileSectionToGutenberg(section, settings)).join('\n\n');
   }
 
-  private compilePageToGutenberg(page: Page, accentColor: string): string {
-    return page.sections.map((section: Section) => this.compileSectionToGutenberg(section, accentColor)).join('\n\n');
+  private compileSectionToGutenberg(section: Section, settings: SiteSettings): string {
+    const sectionClass = `section-${section.type}`;
+    const styleClass = section.style?.darkMode ? ' dark-mode' : '';
+    const paddingClass = section.style?.padding ? ` padding-${section.style.padding}` : '';
+
+    const blocks = section.blocks.map((block: Block) => this.compileBlockToGutenberg(block, settings)).join('\n');
+
+    return `<!-- wp:group {"className":"${sectionClass}${styleClass}${paddingClass}"} -->
+<div class="wp-block-group ${sectionClass}${styleClass}${paddingClass}">${blocks}</div>
+<!-- /wp:group -->`;
   }
 
-  private compileSectionToHtml(section: Section, accentColor: string): string {
-    const blocks = section.blocks.map((block: Block) => this.compileBlockToHtml(block, accentColor)).join('\n');
-    return `<section class="wp-block-group section-${section.type}" data-section-id="${section.id}">${blocks}</section>`;
-  }
-
-  private compileSectionToGutenberg(section: Section, accentColor: string): string {
-    const blocks = section.blocks.map((block: Block) => this.compileBlockToGutenberg(block, accentColor)).join('\n');
-    return `<!-- wp:group {"className":"section-${section.type}"} -->\n<div class="wp-block-group section-${section.type}">${blocks}</div>\n<!-- /wp:group -->`;
-  }
-
-  private compileBlockToHtml(block: Block, accentColor: string): string {
+  private compileBlockToGutenberg(block: Block, settings: SiteSettings): string {
     switch (block.type) {
-      case 'text': {
-        const props = block.props as TextProps;
-        const tag = this.getTextTag(props.variant);
-        return `<${tag}>${this.escapeHtml(props.content)}</${tag}>`;
-      }
-      case 'image': {
-        const props = block.props as ImageProps;
-        return `<figure class="wp-block-image"><img src="${props.src}" alt="${this.escapeHtml(props.alt)}" /></figure>`;
-      }
-      case 'button': {
-        const props = block.props as ButtonProps;
-        const bgColor = props.variant === 'primary' ? accentColor : 'transparent';
-        const textColor = props.variant === 'primary' ? '#ffffff' : accentColor;
-        return `<div class="wp-block-button"><a class="wp-block-button__link" href="${props.href}" style="background-color:${bgColor};color:${textColor}">${this.escapeHtml(props.text)}</a></div>`;
-      }
-      case 'list': {
-        const props = block.props as ListProps;
-        const items = props.items
-          .map((item: ListItem) => `<li><strong>${this.escapeHtml(item.title)}</strong><p>${this.escapeHtml(item.description)}</p></li>`)
-          .join('');
-        return `<ul class="wp-block-list layout-${props.layout}">${items}</ul>`;
-      }
+      case 'text':
+        return this.compileTextBlock(block.props as TextProps);
+
+      case 'image':
+        return this.compileImageBlock(block.props as ImageProps);
+
+      case 'button':
+        return this.compileButtonBlock(block.props as ButtonProps, settings.accentColor);
+
+      case 'list':
+        return this.compileListBlock(block.props as ListProps);
+
+      case 'form':
+        return this.compileFormBlock(block.props as FormProps);
+
+      case 'accordion':
+        return this.compileAccordionBlock(block.props as AccordionProps);
+
+      case 'map':
+        return this.compileMapBlock(block.props as MapProps);
+
+      case 'social':
+        return this.compileSocialBlock(block.props as SocialProps);
+
+      case 'hours':
+        return this.compileHoursBlock(block.props as HoursProps);
+
+      case 'card':
+        return this.compileCardBlock(block.props as CardProps, settings.accentColor);
+
+      case 'stat':
+        return this.compileStatBlock(block.props as StatProps);
+
+      case 'teamMember':
+        return this.compileTeamMemberBlock(block.props as TeamMemberProps);
+
+      case 'timelineItem':
+        return this.compileTimelineItemBlock(block.props as TimelineItemProps);
+
+      case 'video':
+        return this.compileVideoBlock(block.props as VideoProps);
+
+      case 'divider':
+        return this.compileDividerBlock(block.props as DividerProps);
+
+      case 'spacer':
+        return this.compileSpacerBlock(block.props as SpacerProps);
+
       default:
         return '';
     }
   }
 
-  private compileBlockToGutenberg(block: Block, accentColor: string): string {
-    switch (block.type) {
-      case 'text': {
-        const props = block.props as TextProps;
-        switch (props.variant) {
-          case 'h1':
-            return `<!-- wp:heading {"level":1} -->\n<h1 class="wp-block-heading">${this.escapeHtml(props.content)}</h1>\n<!-- /wp:heading -->`;
-          case 'h2':
-            return `<!-- wp:heading -->\n<h2 class="wp-block-heading">${this.escapeHtml(props.content)}</h2>\n<!-- /wp:heading -->`;
-          case 'h3':
-            return `<!-- wp:heading {"level":3} -->\n<h3 class="wp-block-heading">${this.escapeHtml(props.content)}</h3>\n<!-- /wp:heading -->`;
-          case 'small':
-            return `<!-- wp:paragraph {"fontSize":"small"} -->\n<p class="has-small-font-size">${this.escapeHtml(props.content)}</p>\n<!-- /wp:paragraph -->`;
-          default:
-            return `<!-- wp:paragraph -->\n<p>${this.escapeHtml(props.content)}</p>\n<!-- /wp:paragraph -->`;
-        }
-      }
-      case 'image': {
-        const props = block.props as ImageProps;
-        return `<!-- wp:image -->\n<figure class="wp-block-image"><img src="${props.src}" alt="${this.escapeHtml(props.alt)}"/></figure>\n<!-- /wp:image -->`;
-      }
-      case 'button': {
-        const props = block.props as ButtonProps;
-        const bgColor = props.variant === 'primary' ? accentColor : 'transparent';
-        return `<!-- wp:buttons -->\n<div class="wp-block-buttons"><!-- wp:button {"backgroundColor":"${bgColor}"} -->\n<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="${props.href}">${this.escapeHtml(props.text)}</a></div>\n<!-- /wp:button --></div>\n<!-- /wp:buttons -->`;
-      }
-      case 'list': {
-        const props = block.props as ListProps;
-        const items = props.items.map((item: ListItem) => `<li><strong>${this.escapeHtml(item.title)}</strong> - ${this.escapeHtml(item.description)}</li>`).join('');
-        return `<!-- wp:list -->\n<ul class="wp-block-list">${items}</ul>\n<!-- /wp:list -->`;
-      }
-      default:
-        return '';
-    }
-  }
+  private compileTextBlock(props: TextProps): string {
+    const align = props.align ? ` has-text-align-${props.align}` : '';
 
-  private getTextTag(variant: string): string {
-    switch (variant) {
+    switch (props.variant) {
       case 'h1':
-        return 'h1';
+        return `<!-- wp:heading {"level":1,"className":"${align}"} -->
+<h1 class="wp-block-heading${align}">${this.escapeHtml(props.content)}</h1>
+<!-- /wp:heading -->`;
+
       case 'h2':
-        return 'h2';
+        return `<!-- wp:heading {"className":"${align}"} -->
+<h2 class="wp-block-heading${align}">${this.escapeHtml(props.content)}</h2>
+<!-- /wp:heading -->`;
+
       case 'h3':
-        return 'h3';
+        return `<!-- wp:heading {"level":3,"className":"${align}"} -->
+<h3 class="wp-block-heading${align}">${this.escapeHtml(props.content)}</h3>
+<!-- /wp:heading -->`;
+
+      case 'h4':
+        return `<!-- wp:heading {"level":4,"className":"${align}"} -->
+<h4 class="wp-block-heading${align}">${this.escapeHtml(props.content)}</h4>
+<!-- /wp:heading -->`;
+
+      case 'lead':
+        return `<!-- wp:paragraph {"fontSize":"large","className":"lead${align}"} -->
+<p class="has-large-font-size lead${align}">${this.escapeHtml(props.content)}</p>
+<!-- /wp:paragraph -->`;
+
       case 'small':
-        return 'small';
+      case 'caption':
+        return `<!-- wp:paragraph {"fontSize":"small","className":"${props.variant}${align}"} -->
+<p class="has-small-font-size ${props.variant}${align}">${this.escapeHtml(props.content)}</p>
+<!-- /wp:paragraph -->`;
+
       default:
-        return 'p';
+        return `<!-- wp:paragraph {"className":"${align}"} -->
+<p class="${align}">${this.escapeHtml(props.content)}</p>
+<!-- /wp:paragraph -->`;
     }
+  }
+
+  private compileImageBlock(props: ImageProps): string {
+    const classes = [];
+    if (props.rounded) classes.push('rounded');
+    if (props.shadow) classes.push('has-shadow');
+    const className = classes.length ? ` class="${classes.join(' ')}"` : '';
+
+    return `<!-- wp:image -->
+<figure class="wp-block-image"><img src="${props.src}" alt="${this.escapeHtml(props.alt)}"${className}/></figure>
+<!-- /wp:image -->`;
+  }
+
+  private compileButtonBlock(props: ButtonProps, accentColor: string): string {
+    const sizeClass = props.size ? ` size-${props.size}` : '';
+    const variantClass = props.variant === 'outline' || props.variant === 'ghost' ? ' is-style-outline' : '';
+    const fullWidthClass = props.fullWidth ? ' has-full-width' : '';
+
+    return `<!-- wp:buttons -->
+<div class="wp-block-buttons"><!-- wp:button {"className":"${variantClass}${sizeClass}${fullWidthClass}"} -->
+<div class="wp-block-button${variantClass}${sizeClass}${fullWidthClass}"><a class="wp-block-button__link wp-element-button" href="${props.href}">${this.escapeHtml(props.text)}</a></div>
+<!-- /wp:button --></div>
+<!-- /wp:buttons -->`;
+  }
+
+  private compileListBlock(props: ListProps): string {
+    const columnsAttr = props.columns ? ` columns-${props.columns}` : '';
+    const layoutClass = `layout-${props.layout}${columnsAttr}`;
+
+    const items = props.items.map((item: ListItem) => {
+      const icon = item.icon ? `<span class="icon icon-${item.icon}"></span>` : '';
+      const image = item.image ? `<img src="${item.image}" alt="${this.escapeHtml(item.title)}" class="item-image"/>` : '';
+
+      return `<li class="list-item">
+${image}${icon}
+<strong class="item-title">${this.escapeHtml(item.title)}</strong>
+<span class="item-description">${this.escapeHtml(item.description)}</span>
+</li>`;
+    }).join('\n');
+
+    return `<!-- wp:list {"className":"${layoutClass}"} -->
+<ul class="wp-block-list ${layoutClass}">${items}</ul>
+<!-- /wp:list -->`;
+  }
+
+  private compileFormBlock(props: FormProps): string {
+    const fields = props.fields.map((field: FormField) => {
+      const required = field.required ? ' required' : '';
+      const placeholder = field.placeholder ? ` placeholder="${this.escapeHtml(field.placeholder)}"` : '';
+
+      switch (field.type) {
+        case 'textarea':
+          return `<div class="form-group">
+<label for="${field.name}">${this.escapeHtml(field.label)}${field.required ? ' *' : ''}</label>
+<textarea name="${field.name}" id="${field.name}"${placeholder}${required}></textarea>
+</div>`;
+
+        case 'select':
+          const options = field.options ? field.options.map(opt =>
+            `<option value="${this.escapeHtml(opt)}">${this.escapeHtml(opt)}</option>`
+          ).join('') : '';
+          return `<div class="form-group">
+<label for="${field.name}">${this.escapeHtml(field.label)}${field.required ? ' *' : ''}</label>
+<select name="${field.name}" id="${field.name}"${required}><option value="">Select...</option>${options}</select>
+</div>`;
+
+        case 'checkbox':
+          return `<div class="form-group form-check">
+<input type="checkbox" name="${field.name}" id="${field.name}"${required}/>
+<label for="${field.name}">${this.escapeHtml(field.label)}</label>
+</div>`;
+
+        default:
+          return `<div class="form-group">
+<label for="${field.name}">${this.escapeHtml(field.label)}${field.required ? ' *' : ''}</label>
+<input type="${field.type}" name="${field.name}" id="${field.name}"${placeholder}${required}/>
+</div>`;
+      }
+    }).join('\n');
+
+    return `<!-- wp:html -->
+<form class="contact-form" action="#" method="POST" data-recipient="${props.recipientEmail || ''}">
+${fields}
+<div class="form-group">
+<button type="submit" class="wp-block-button__link wp-element-button">${this.escapeHtml(props.submitText)}</button>
+</div>
+<div class="form-message" style="display:none;">${this.escapeHtml(props.successMessage)}</div>
+</form>
+<!-- /wp:html -->`;
+  }
+
+  private compileAccordionBlock(props: AccordionProps): string {
+    const items = props.items.map((item: AccordionItem, index: number) => {
+      return `<div class="faq-item" data-index="${index}">
+<div class="faq-question">${this.escapeHtml(item.question)}</div>
+<div class="faq-answer">${this.escapeHtml(item.answer)}</div>
+</div>`;
+    }).join('\n');
+
+    return `<!-- wp:html -->
+<div class="faq-list" data-allow-multiple="${props.allowMultiple ? 'true' : 'false'}">
+${items}
+</div>
+<script>
+document.querySelectorAll('.faq-question').forEach(function(q) {
+  q.addEventListener('click', function() {
+    var item = this.parentElement;
+    var list = item.parentElement;
+    var allowMultiple = list.dataset.allowMultiple === 'true';
+    if (!allowMultiple) {
+      list.querySelectorAll('.faq-item').forEach(function(i) {
+        if (i !== item) i.classList.remove('open');
+      });
+    }
+    item.classList.toggle('open');
+  });
+});
+</script>
+<!-- /wp:html -->`;
+  }
+
+  private compileMapBlock(props: MapProps): string {
+    const address = encodeURIComponent(props.address);
+    const zoom = props.zoom || 15;
+    const height = props.height || 400;
+
+    return `<!-- wp:html -->
+<div class="map-container" style="height:${height}px;">
+<iframe
+  src="https://www.google.com/maps/embed/v1/place?key=YOUR_API_KEY&q=${address}&zoom=${zoom}"
+  width="100%"
+  height="${height}"
+  style="border:0;"
+  allowfullscreen=""
+  loading="lazy"
+  referrerpolicy="no-referrer-when-downgrade">
+</iframe>
+</div>
+<!-- /wp:html -->`;
+  }
+
+  private compileSocialBlock(props: SocialProps): string {
+    const icons: Record<string, string> = {
+      facebook: '📘',
+      twitter: '🐦',
+      instagram: '📷',
+      linkedin: '💼',
+      youtube: '▶️',
+      tiktok: '🎵',
+      pinterest: '📌',
+      yelp: '⭐',
+      google: '🔍',
+    };
+
+    const links = props.links.map((link: SocialLink) => {
+      const icon = icons[link.platform] || '🔗';
+      return `<a href="${link.url}" class="social-icon social-${link.platform}" target="_blank" rel="noopener noreferrer" aria-label="${link.platform}">${icon}</a>`;
+    }).join('\n');
+
+    return `<!-- wp:html -->
+<div class="social-icons style-${props.style || 'icons'}">
+${links}
+</div>
+<!-- /wp:html -->`;
+  }
+
+  private compileHoursBlock(props: HoursProps): string {
+    const dayNames: Record<string, string> = {
+      monday: 'Monday',
+      tuesday: 'Tuesday',
+      wednesday: 'Wednesday',
+      thursday: 'Thursday',
+      friday: 'Friday',
+      saturday: 'Saturday',
+      sunday: 'Sunday',
+    };
+
+    const rows = props.hours.map((day: BusinessDay) => {
+      const dayName = dayNames[day.day] || day.day;
+      const time = day.closed ? '<span class="hours-closed">Closed</span>' : `${day.open} - ${day.close}`;
+      return `<div class="hours-row">
+<span class="hours-day">${dayName}</span>
+<span class="hours-time">${time}</span>
+</div>`;
+    }).join('\n');
+
+    const note = props.note ? `<p class="hours-note">${this.escapeHtml(props.note)}</p>` : '';
+
+    return `<!-- wp:html -->
+<div class="hours-table">
+${rows}
+</div>
+${note}
+<!-- /wp:html -->`;
+  }
+
+  private compileCardBlock(props: CardProps, accentColor: string): string {
+    const image = props.image ? `<div class="product-image"><img src="${props.image}" alt="${this.escapeHtml(props.title)}"/></div>` : '';
+    const icon = props.icon ? `<span class="card-icon icon-${props.icon}"></span>` : '';
+    const price = props.price ? `<div class="product-price">${this.escapeHtml(props.price)}</div>` : '';
+    const features = props.features ? `<ul class="pricing-features">${props.features.map(f => `<li>${this.escapeHtml(f)}</li>`).join('')}</ul>` : '';
+    const link = props.linkText ? `<a href="${props.link || '#'}" class="wp-block-button__link">${this.escapeHtml(props.linkText)}</a>` : '';
+    const highlighted = props.highlighted ? ' featured' : '';
+
+    return `<!-- wp:html -->
+<div class="product-card pricing-card${highlighted}">
+${image}
+<div class="product-info pricing-info">
+${icon}
+<h3 class="product-title pricing-title">${this.escapeHtml(props.title)}</h3>
+${price}
+<p>${this.escapeHtml(props.description)}</p>
+${features}
+${link}
+</div>
+</div>
+<!-- /wp:html -->`;
+  }
+
+  private compileStatBlock(props: StatProps): string {
+    const prefix = props.prefix || '';
+    const suffix = props.suffix || '';
+    const icon = props.icon ? `<span class="stat-icon icon-${props.icon}"></span>` : '';
+
+    return `<!-- wp:html -->
+<div class="stat-item">
+${icon}
+<div class="stat-value">${prefix}${this.escapeHtml(props.value)}${suffix}</div>
+<div class="stat-label">${this.escapeHtml(props.label)}</div>
+</div>
+<!-- /wp:html -->`;
+  }
+
+  private compileTeamMemberBlock(props: TeamMemberProps): string {
+    const bio = props.bio ? `<p class="team-member-bio">${this.escapeHtml(props.bio)}</p>` : '';
+    const email = props.email ? `<a href="mailto:${props.email}" class="team-contact">${props.email}</a>` : '';
+
+    return `<!-- wp:html -->
+<div class="team-member">
+<img src="${props.image}" alt="${this.escapeHtml(props.name)}" class="team-member-photo"/>
+<div class="team-member-info">
+<h3 class="team-member-name">${this.escapeHtml(props.name)}</h3>
+<p class="team-member-role">${this.escapeHtml(props.role)}</p>
+${bio}
+${email}
+</div>
+</div>
+<!-- /wp:html -->`;
+  }
+
+  private compileTimelineItemBlock(props: TimelineItemProps): string {
+    const icon = props.icon ? `<span class="timeline-icon icon-${props.icon}"></span>` : '';
+
+    return `<!-- wp:html -->
+<div class="timeline-item">
+${icon}
+<div class="timeline-year">${this.escapeHtml(props.year)}</div>
+<h4 class="timeline-title">${this.escapeHtml(props.title)}</h4>
+<p class="timeline-description">${this.escapeHtml(props.description)}</p>
+</div>
+<!-- /wp:html -->`;
+  }
+
+  private compileVideoBlock(props: VideoProps): string {
+    const autoplay = props.autoplay ? ' autoplay' : '';
+    const loop = props.loop ? ' loop' : '';
+    const muted = props.muted ? ' muted' : '';
+    const poster = props.poster ? ` poster="${props.poster}"` : '';
+
+    return `<!-- wp:html -->
+<div class="video-container">
+<video src="${props.src}"${poster}${autoplay}${loop}${muted} controls playsinline>
+Your browser does not support the video tag.
+</video>
+</div>
+<!-- /wp:html -->`;
+  }
+
+  private compileDividerBlock(props: DividerProps): string {
+    const style = props.style || 'line';
+    const color = props.color ? ` style="--divider-color:${props.color}"` : '';
+
+    return `<!-- wp:separator {"className":"divider-${style}"} -->
+<hr class="wp-block-separator divider-${style}"${color}/>
+<!-- /wp:separator -->`;
+  }
+
+  private compileSpacerBlock(props: SpacerProps): string {
+    const heights: Record<string, string> = {
+      sm: '24px',
+      md: '48px',
+      lg: '80px',
+      xl: '120px',
+    };
+    const height = heights[props.height] || heights.md;
+
+    return `<!-- wp:spacer {"height":"${height}"} -->
+<div style="height:${height}" aria-hidden="true" class="wp-block-spacer"></div>
+<!-- /wp:spacer -->`;
   }
 
   private escapeHtml(str: string): string {
