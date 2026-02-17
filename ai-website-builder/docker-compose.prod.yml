@@ -118,7 +118,7 @@ services:
       WORDPRESS_DB_PASSWORD: ${WP_DB_PASSWORD:-wordpress}
       WORDPRESS_DB_NAME: wordpress
       # Set WP_MOCK_MODE=true to use mock mode instead of real WordPress
-      # WP_MOCK_MODE: "true"
+      WP_MOCK_MODE: "true"
     volumes:
       - wordpress_data:/var/www/html:rw
     networks:
