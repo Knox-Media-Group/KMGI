@@ -34,6 +34,57 @@ services:
     networks:
       - internal
 
+  # WordPress Database (MySQL)
+  wordpress-db:
+    image: mysql:8.0
+    container_name: builder-wordpress-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${WP_DB_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: ${WP_DB_PASSWORD:-wordpress}
+    volumes:
+      - wordpress_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  # WordPress Multisite
+  wordpress:
+    image: wordpress:6-php8.2-apache
+    container_name: builder-wordpress
+    restart: unless-stopped
+    depends_on:
+      wordpress-db:
+        condition: service_healthy
+    environment:
+      WORDPRESS_DB_HOST: wordpress-db:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: ${WP_DB_PASSWORD:-wordpress}
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_ALLOW_MULTISITE', true);
+        define('MULTISITE', true);
+        define('SUBDIRECTORY_INSTALL', true);
+        define('DOMAIN_CURRENT_SITE', '${WP_DOMAIN:-localhost}');
+        define('PATH_CURRENT_SITE', '/');
+        define('SITE_ID_CURRENT_SITE', 1);
+        define('BLOG_ID_CURRENT_SITE', 1);
+    volumes:
+      - wordpress_data:/var/www/html
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/wp-admin/install.php"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
   api:
     build:
       context: .
@@ -45,6 +96,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      wordpress:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://${DB_USER:-builder}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-builder}?schema=public
       REDIS_HOST: redis
@@ -54,7 +107,14 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
       NODE_ENV: production
       PORT: 4000
-      WP_MOCK_MODE: "true"
+      # WordPress configuration - Real mode (no mock)
+      WP_MULTISITE_URL: ${WP_MULTISITE_URL:-http://wordpress}
+      WP_PATH: /var/www/html
+      WP_CLI_PATH: wp
+      # Set WP_MOCK_MODE=true to use mock mode instead of real WordPress
+      # WP_MOCK_MODE: "true"
+    volumes:
+      - wordpress_data:/var/www/html:rw
     networks:
       - internal
     healthcheck:
@@ -82,6 +142,7 @@ services:
     depends_on:
       - web
       - api
+      - wordpress
     ports:
       - "80:80"
       - "443:443"
@@ -105,6 +166,8 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  wordpress_data:
+  wordpress_db_data:
   certbot_data:
   certbot_www:
 

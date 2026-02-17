@@ -28,9 +28,15 @@ export class WordPressService {
   constructor(private configService: ConfigService) {
     this.wpCliPath = this.configService.get('WP_CLI_PATH') || 'wp';
     this.wpMultisiteUrl = this.configService.get('WP_MULTISITE_URL') || 'http://localhost:8080';
-    // Enable mock mode if WP_MOCK_MODE is set, or if in development, or if no WP_MULTISITE_URL is configured
+    // Mock mode ONLY when explicitly set via WP_MOCK_MODE=true (not auto-triggered by NODE_ENV)
     const wpMock = this.configService.get('WP_MOCK_MODE');
-    this.mockMode = wpMock === 'true' || wpMock === '1' || this.configService.get('NODE_ENV') === 'development';
+    this.mockMode = wpMock === 'true' || wpMock === '1';
+
+    if (this.mockMode) {
+      console.log('WordPress Service: Running in MOCK MODE (WP_MOCK_MODE=true)');
+    } else {
+      console.log(`WordPress Service: Real mode - WP_MULTISITE_URL=${this.wpMultisiteUrl}`);
+    }
   }
 
   private async runWpCli(command: string): Promise<string> {
