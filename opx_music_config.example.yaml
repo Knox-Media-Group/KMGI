@@ -28,6 +28,8 @@ source:
 
 wmxv:
   # Root directory for WMXV publish folders
+  # Windows:  "D:\\"  or  "D:\\WMXV-HD3"
+  # macOS:    "/Volumes/D"  or  "/Volumes/10.1.10.199/WMXV-HD3"
   publish_root: "./wmxv_publish"
 
   # Classification -> subfolder mapping
