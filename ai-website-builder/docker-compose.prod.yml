@@ -109,6 +109,7 @@ services:
       PORT: 4000
       # WordPress configuration - Real mode (no mock)
       WP_MULTISITE_URL: ${WP_MULTISITE_URL:-http://wordpress}
+      WP_PUBLIC_URL: ${WP_PUBLIC_URL:-https://1smartersite.com}
       WP_PATH: /var/www/html
       WP_CLI_PATH: wp
       # WordPress DB credentials for WP-CLI (must match wordpress container)

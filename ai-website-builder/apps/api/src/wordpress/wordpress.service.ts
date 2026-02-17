@@ -25,9 +25,13 @@ export class WordPressService {
   private wpMultisiteUrl: string;
   private mockMode: boolean;
 
+  private wpPublicUrl: string;
+
   constructor(private configService: ConfigService) {
     this.wpCliPath = this.configService.get('WP_CLI_PATH') || 'wp';
     this.wpMultisiteUrl = this.configService.get('WP_MULTISITE_URL') || 'http://localhost:8080';
+    // Public URL for WP-CLI commands (must match WordPress DOMAIN_CURRENT_SITE)
+    this.wpPublicUrl = this.configService.get('WP_PUBLIC_URL') || this.configService.get('FRONTEND_URL') || 'https://1smartersite.com';
     // Mock mode ONLY when explicitly set via WP_MOCK_MODE=true (not auto-triggered by NODE_ENV)
     const wpMock = this.configService.get('WP_MOCK_MODE');
     this.mockMode = wpMock === 'true' || wpMock === '1';
@@ -35,7 +39,7 @@ export class WordPressService {
     if (this.mockMode) {
       console.log('WordPress Service: Running in MOCK MODE (WP_MOCK_MODE=true)');
     } else {
-      console.log(`WordPress Service: Real mode - WP_MULTISITE_URL=${this.wpMultisiteUrl}`);
+      console.log(`WordPress Service: Real mode - WP_PUBLIC_URL=${this.wpPublicUrl}`);
     }
   }
 
@@ -67,7 +71,8 @@ export class WordPressService {
       .substring(0, 50);
 
     const siteSlug = `${slug}-${site.id.substring(0, 8)}`;
-    const siteUrl = `${this.wpMultisiteUrl}/${siteSlug}`;
+    // Use public URL for returned URLs (what users will see)
+    const siteUrl = `${this.wpPublicUrl}/${siteSlug}`;
     const adminEmail = site.owner.email;
     const siteTitle = site.name;
 
@@ -101,10 +106,10 @@ export class WordPressService {
     }
   }
 
-  async applyThemeAndPlugins(wpSiteId: number): Promise<void> {
+  async applyThemeAndPlugins(wpSiteId: number, wpSiteUrl?: string): Promise<void> {
     try {
-      // Switch to the site context
-      const urlFlag = `--url=${this.wpMultisiteUrl}/?blog_id=${wpSiteId}`;
+      // Switch to the site context using the site URL (required for multisite)
+      const urlFlag = wpSiteUrl ? `--url=${wpSiteUrl}` : `--url=${this.wpPublicUrl}`;
 
       // Activate a clean theme (Twenty Twenty-Four or similar)
       await this.runWpCli(`theme activate twentytwentyfour ${urlFlag}`);
@@ -122,9 +127,9 @@ export class WordPressService {
     }
   }
 
-  async publishVersion(wpSiteId: number, content: SiteContent): Promise<void> {
+  async publishVersion(wpSiteId: number, content: SiteContent, wpSiteUrl?: string): Promise<void> {
     try {
-      const urlFlag = `--url=${this.wpMultisiteUrl}/?blog_id=${wpSiteId}`;
+      const urlFlag = wpSiteUrl ? `--url=${wpSiteUrl}` : `--url=${this.wpPublicUrl}`;
 
       for (const page of content.pages) {
         const htmlContent = this.compilePageToHtml(page, content.settings.accentColor);

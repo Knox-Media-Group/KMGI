@@ -128,7 +128,7 @@ export class JobsProcessor implements OnModuleInit {
     });
 
     // Apply theme and plugins
-    await this.wordpressService.applyThemeAndPlugins(wpResult.wpSiteId);
+    await this.wordpressService.applyThemeAndPlugins(wpResult.wpSiteId, wpResult.wpSiteUrl);
     await this.jobsService.addJobLog(jobId, 'Theme and plugins applied');
 
     // Automatically trigger AI generation
@@ -221,7 +221,7 @@ export class JobsProcessor implements OnModuleInit {
     }
 
     // Publish to WordPress
-    await this.wordpressService.publishVersion(site.wpSiteId, version.pageJson as unknown as SiteContent);
+    await this.wordpressService.publishVersion(site.wpSiteId, version.pageJson as unknown as SiteContent, site.wpSiteUrl || undefined);
     await this.jobsService.addJobLog(jobId, 'Content published to WordPress');
 
     // Update site status
@@ -264,7 +264,7 @@ export class JobsProcessor implements OnModuleInit {
     }
 
     // Publish old version to WordPress
-    await this.wordpressService.publishVersion(site.wpSiteId, version.pageJson as unknown as SiteContent);
+    await this.wordpressService.publishVersion(site.wpSiteId, version.pageJson as unknown as SiteContent, site.wpSiteUrl || undefined);
     await this.jobsService.addJobLog(jobId, 'Rolled back content published');
 
     // Update site
