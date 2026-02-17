@@ -3,6 +3,30 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
+import {
+  ArrowLeft,
+  Undo2,
+  Redo2,
+  Save,
+  Check,
+  Loader2,
+  Plus,
+  GripVertical,
+  ChevronUp,
+  ChevronDown,
+  Trash2,
+  X,
+  Sparkles,
+  Layout,
+  MessageSquare,
+  Star,
+  Users,
+  Phone,
+  Image as ImageIcon,
+  FileText,
+  Target,
+  List
+} from 'lucide-react';
 import { useAuthStore, useEditorStore } from '@/lib/store';
 import { sitesApi } from '@/lib/api';
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
@@ -10,6 +34,20 @@ import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import type { Section, Block, TextProps, ImageProps, ButtonProps, ListProps, SiteContent } from '@builder/shared';
 import { SECTION_LIBRARY } from '@builder/shared';
+
+// Section type icons mapping
+const SECTION_ICONS: Record<string, React.ReactNode> = {
+  hero: <Layout className="w-5 h-5" />,
+  about: <FileText className="w-5 h-5" />,
+  services: <Target className="w-5 h-5" />,
+  features: <Star className="w-5 h-5" />,
+  testimonials: <MessageSquare className="w-5 h-5" />,
+  team: <Users className="w-5 h-5" />,
+  contact: <Phone className="w-5 h-5" />,
+  gallery: <ImageIcon className="w-5 h-5" />,
+  cta: <Target className="w-5 h-5" />,
+  faq: <List className="w-5 h-5" />,
+};
 
 export default function EditorPage() {
   const router = useRouter();
@@ -41,6 +79,7 @@ export default function EditorPage() {
   const [saving, setSaving] = useState(false);
   const [showSectionPicker, setShowSectionPicker] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -78,11 +117,15 @@ export default function EditorPage() {
   const handleSave = useCallback(async () => {
     if (!token || pages.length === 0) return;
     setSaving(true);
+    setSaveStatus('saving');
     try {
       await sitesApi.saveDraft(siteId, pages, token);
       setLastSaved(new Date());
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
     } catch (err) {
       console.error('Failed to save:', err);
+      setSaveStatus('idle');
     } finally {
       setSaving(false);
     }
@@ -168,8 +211,13 @@ export default function EditorPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-xl">Loading editor...</div>
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
+        <div className="text-center animate-fade-in">
+          <div className="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-glow animate-pulse-glow">
+            <Sparkles className="w-8 h-8 text-white" />
+          </div>
+          <p className="text-gray-600 font-medium">Loading editor...</p>
+        </div>
       </div>
     );
   }
@@ -179,26 +227,36 @@ export default function EditorPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       {/* Editor Header */}
-      <header className="bg-white border-b sticky top-0 z-50">
+      <header className="bg-white/95 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-50">
         <div className="flex items-center justify-between px-4 py-3">
+          {/* Left: Back + Site name */}
           <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">
-              ← Back
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span className="hidden sm:inline">Back</span>
             </Link>
-            <span className="text-gray-300">|</span>
-            <span className="font-medium">{settings?.businessName}</span>
+            <div className="h-6 w-px bg-gray-200" />
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center shadow-glow-sm">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+              <span className="font-semibold text-gray-900">{settings?.businessName}</span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* Page Tabs */}
+          {/* Center: Page Tabs */}
+          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
             {pages.map((page, index) => (
               <button
                 key={page.slug}
                 onClick={() => setSelectedPage(index)}
-                className={`px-4 py-2 rounded-lg ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   selectedPageIndex === index
-                    ? 'bg-gray-100 font-medium'
-                    : 'text-gray-600 hover:bg-gray-50'
+                    ? 'bg-white text-gray-900 shadow-soft'
+                    : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 {page.title}
@@ -206,33 +264,61 @@ export default function EditorPage() {
             ))}
           </div>
 
-          <div className="flex items-center gap-4">
+          {/* Right: Actions */}
+          <div className="flex items-center gap-3">
             {/* Undo/Redo */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
               <button
                 onClick={undo}
                 disabled={!canUndo()}
-                className="p-2 rounded hover:bg-gray-100 disabled:opacity-30"
+                className="p-2 rounded-lg hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 title="Undo (Ctrl+Z)"
               >
-                ↩
+                <Undo2 className="w-4 h-4" />
               </button>
               <button
                 onClick={redo}
                 disabled={!canRedo()}
-                className="p-2 rounded hover:bg-gray-100 disabled:opacity-30"
+                className="p-2 rounded-lg hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 title="Redo (Ctrl+Shift+Z)"
               >
-                ↪
+                <Redo2 className="w-4 h-4" />
               </button>
             </div>
 
             {/* Save Status */}
-            <span className="text-sm text-gray-500">
-              {saving ? 'Saving...' : lastSaved ? `Saved ${lastSaved.toLocaleTimeString()}` : ''}
-            </span>
+            <div className="flex items-center gap-2 text-sm">
+              {saveStatus === 'saving' && (
+                <span className="flex items-center gap-2 text-gray-500">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </span>
+              )}
+              {saveStatus === 'saved' && (
+                <span className="flex items-center gap-2 text-emerald-600">
+                  <Check className="w-4 h-4" />
+                  Saved
+                </span>
+              )}
+              {saveStatus === 'idle' && lastSaved && (
+                <span className="text-gray-400 hidden sm:block">
+                  Last saved {lastSaved.toLocaleTimeString()}
+                </span>
+              )}
+            </div>
 
-            <Link href="/dashboard" className="btn-primary text-base py-2 px-4">
+            {/* Manual Save */}
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="btn-ghost"
+              title="Save (Ctrl+S)"
+            >
+              <Save className="w-4 h-4" />
+            </button>
+
+            {/* Done Button */}
+            <Link href="/dashboard" className="btn-primary">
               Done
             </Link>
           </div>
@@ -242,76 +328,101 @@ export default function EditorPage() {
       {/* Editor Content */}
       <div className="flex flex-1">
         {/* Main Canvas */}
-        <main className="flex-1 p-8 overflow-auto">
-          <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-sm overflow-hidden">
-            {currentPage && (
-              <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext
-                  items={currentPage.sections.map((s) => s.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  {currentPage.sections.map((section) => (
-                    <SortableSection
-                      key={section.id}
-                      section={section}
-                      isSelected={selectedSectionId === section.id}
-                      accentColor={settings?.accentColor || '#2563EB'}
-                      onSelect={() => setSelectedSection(section.id)}
-                      onDelete={() => handleDeleteSection(section.id)}
-                      onMoveUp={() => {
-                        moveSection(section.id, 'up');
-                        saveSnapshot();
-                      }}
-                      onMoveDown={() => {
-                        moveSection(section.id, 'down');
-                        saveSnapshot();
-                      }}
-                      onBlockChange={handleBlockChange}
-                      onBlockBlur={handleBlockBlur}
-                    />
-                  ))}
-                </SortableContext>
-              </DndContext>
-            )}
+        <main className="flex-1 p-6 md:p-8 overflow-auto">
+          <div className="max-w-4xl mx-auto">
+            {/* Canvas Container */}
+            <div className="bg-white rounded-2xl shadow-soft overflow-hidden border border-gray-100">
+              {currentPage && (
+                <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext
+                    items={currentPage.sections.map((s) => s.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {currentPage.sections.map((section) => (
+                      <SortableSection
+                        key={section.id}
+                        section={section}
+                        isSelected={selectedSectionId === section.id}
+                        accentColor={settings?.accentColor || '#8B5CF6'}
+                        onSelect={() => setSelectedSection(section.id)}
+                        onDelete={() => handleDeleteSection(section.id)}
+                        onMoveUp={() => {
+                          moveSection(section.id, 'up');
+                          saveSnapshot();
+                        }}
+                        onMoveDown={() => {
+                          moveSection(section.id, 'down');
+                          saveSnapshot();
+                        }}
+                        onBlockChange={handleBlockChange}
+                        onBlockBlur={handleBlockBlur}
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
+              )}
 
-            {/* Add Section Button */}
-            <div className="p-8 border-t border-dashed border-gray-300 text-center">
-              <button
-                onClick={() => setShowSectionPicker(true)}
-                className="inline-flex items-center gap-2 px-6 py-3 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg border-2 border-dashed border-gray-300"
-              >
-                <span className="text-2xl">+</span>
-                Add Section
-              </button>
+              {/* Add Section Button */}
+              <div className="p-8 border-t border-dashed border-gray-200 text-center bg-gray-50/50">
+                <button
+                  onClick={() => setShowSectionPicker(true)}
+                  className="inline-flex items-center gap-3 px-6 py-4 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-xl border-2 border-dashed border-gray-300 hover:border-purple-300 transition-all duration-200"
+                >
+                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-purple-100">
+                    <Plus className="w-5 h-5" />
+                  </div>
+                  <span className="font-medium">Add Section</span>
+                </button>
+              </div>
             </div>
+
+            {/* Help Text */}
+            <p className="text-center text-sm text-gray-400 mt-4">
+              Click on any text to edit. Drag sections to reorder.
+            </p>
           </div>
         </main>
       </div>
 
       {/* Section Picker Modal */}
       {showSectionPicker && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-lg w-full mx-4">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold">Add Section</h2>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full mx-4 animate-slide-up overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Add Section</h2>
+                <p className="text-sm text-gray-500 mt-1">Choose a section type to add to your page</p>
+              </div>
               <button
                 onClick={() => setShowSectionPicker(false)}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
+                className="w-10 h-10 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors"
               >
-                ×
+                <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              {SECTION_LIBRARY.map((item) => (
-                <button
-                  key={item.type}
-                  onClick={() => handleAddSection(item.type)}
-                  className="p-4 text-left rounded-lg border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors"
-                >
-                  <div className="font-semibold">{item.name}</div>
-                  <div className="text-sm text-gray-500">{item.description}</div>
-                </button>
-              ))}
+
+            {/* Modal Content */}
+            <div className="p-6 max-h-[60vh] overflow-y-auto">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {SECTION_LIBRARY.map((item) => (
+                  <button
+                    key={item.type}
+                    onClick={() => handleAddSection(item.type)}
+                    className="p-4 text-left rounded-xl border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all duration-200 group"
+                  >
+                    <div className="w-10 h-10 bg-gray-100 group-hover:bg-purple-100 rounded-lg flex items-center justify-center mb-3 transition-colors">
+                      <span className="text-gray-500 group-hover:text-purple-600">
+                        {SECTION_ICONS[item.type] || <Layout className="w-5 h-5" />}
+                      </span>
+                    </div>
+                    <div className="font-semibold text-gray-900 group-hover:text-purple-700 mb-1">
+                      {item.name}
+                    </div>
+                    <div className="text-xs text-gray-500">{item.description}</div>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -361,27 +472,51 @@ function SortableSection({
     >
       {/* Section Controls */}
       <div
-        className={`absolute top-2 right-2 flex items-center gap-1 bg-white rounded-lg shadow-sm border px-2 py-1 ${
+        className={`absolute top-3 right-3 flex items-center gap-1 bg-white rounded-xl shadow-medium border border-gray-100 px-2 py-1.5 ${
           isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-        } transition-opacity z-10`}
+        } transition-all duration-200 z-10`}
       >
         <button
           {...attributes}
           {...listeners}
-          className="p-1 text-gray-400 hover:text-gray-600 cursor-grab"
+          className="p-1.5 text-gray-400 hover:text-gray-600 cursor-grab hover:bg-gray-50 rounded-lg transition-colors"
           title="Drag to reorder"
         >
-          ⋮⋮
+          <GripVertical className="w-4 h-4" />
         </button>
-        <button onClick={onMoveUp} className="p-1 text-gray-400 hover:text-gray-600" title="Move up">
-          ↑
+        <div className="w-px h-4 bg-gray-200" />
+        <button
+          onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
+          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+          title="Move up"
+        >
+          <ChevronUp className="w-4 h-4" />
         </button>
-        <button onClick={onMoveDown} className="p-1 text-gray-400 hover:text-gray-600" title="Move down">
-          ↓
+        <button
+          onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
+          className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+          title="Move down"
+        >
+          <ChevronDown className="w-4 h-4" />
         </button>
-        <button onClick={onDelete} className="p-1 text-red-400 hover:text-red-600" title="Delete">
-          ×
+        <div className="w-px h-4 bg-gray-200" />
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          title="Delete section"
+        >
+          <Trash2 className="w-4 h-4" />
         </button>
+      </div>
+
+      {/* Section Type Label */}
+      <div
+        className={`absolute top-3 left-3 flex items-center gap-2 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-lg shadow-soft border border-gray-100 text-xs font-medium text-gray-500 ${
+          isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+        } transition-all duration-200 z-10`}
+      >
+        {SECTION_ICONS[section.type] || <Layout className="w-3.5 h-3.5" />}
+        <span className="capitalize">{section.type}</span>
       </div>
 
       {/* Section Content */}
@@ -467,13 +602,23 @@ function EditableBlock({
             onChange={handleFileChange}
             className="hidden"
           />
-          <img
-            src={props.src || '/placeholder-image.jpg'}
-            alt={props.alt}
-            className="max-w-full h-auto rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={handleImageClick}
-            title="Click to replace image"
-          />
+          <div className="relative group/image">
+            <img
+              src={props.src || '/placeholder-image.jpg'}
+              alt={props.alt}
+              className="max-w-full h-auto rounded-xl cursor-pointer transition-all duration-200 group-hover/image:opacity-80"
+              onClick={handleImageClick}
+            />
+            <div
+              className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-xl opacity-0 group-hover/image:opacity-100 transition-opacity cursor-pointer"
+              onClick={handleImageClick}
+            >
+              <div className="bg-white px-4 py-2 rounded-lg shadow-medium flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-gray-600" />
+                <span className="text-sm font-medium text-gray-700">Replace Image</span>
+              </div>
+            </div>
+          </div>
         </div>
       );
     }
@@ -489,8 +634,8 @@ function EditableBlock({
           <span
             contentEditable
             suppressContentEditableWarning
-            className={`inline-block px-8 py-4 text-lg font-semibold rounded-lg cursor-text ${
-              props.variant === 'primary' ? '' : 'border-2'
+            className={`inline-block px-8 py-4 text-lg font-semibold rounded-xl cursor-text transition-all duration-200 ${
+              props.variant === 'primary' ? 'shadow-soft' : 'border-2'
             }`}
             style={{ backgroundColor: bgColor, color: textColor, borderColor }}
             onBlur={(e) => {
@@ -510,11 +655,11 @@ function EditableBlock({
       return (
         <ul className={`editor-block my-4 ${props.layout === 'grid' ? 'grid grid-cols-3 gap-4' : 'space-y-4'}`}>
           {props.items.map((item, index) => (
-            <li key={item.id} className="p-4 bg-gray-50 rounded-lg">
+            <li key={item.id} className="p-5 bg-gray-50 rounded-xl border border-gray-100 hover:border-purple-200 transition-colors">
               <div
                 contentEditable
                 suppressContentEditableWarning
-                className="font-semibold outline-none"
+                className="font-semibold text-gray-900 outline-none"
                 onBlur={(e) => {
                   const newItems = [...props.items];
                   newItems[index] = { ...item, title: e.currentTarget.textContent || '' };
@@ -527,7 +672,7 @@ function EditableBlock({
               <div
                 contentEditable
                 suppressContentEditableWarning
-                className="text-gray-600 text-sm mt-1 outline-none"
+                className="text-gray-600 text-sm mt-2 outline-none"
                 onBlur={(e) => {
                   const newItems = [...props.items];
                   newItems[index] = { ...item, description: e.currentTarget.textContent || '' };
@@ -566,14 +711,14 @@ function getTextTag(variant: string): keyof JSX.IntrinsicElements {
 function getTextClassName(variant: string): string {
   switch (variant) {
     case 'h1':
-      return 'text-4xl font-bold mb-4';
+      return 'text-4xl font-bold mb-4 text-gray-900';
     case 'h2':
-      return 'text-3xl font-bold mb-4';
+      return 'text-3xl font-bold mb-4 text-gray-900';
     case 'h3':
-      return 'text-xl font-bold mb-2';
+      return 'text-xl font-semibold mb-2 text-gray-900';
     case 'small':
       return 'text-sm text-gray-500';
     default:
-      return 'text-gray-600 mb-4';
+      return 'text-gray-600 mb-4 leading-relaxed';
   }
 }
