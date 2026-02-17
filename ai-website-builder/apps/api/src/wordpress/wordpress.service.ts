@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { SiteContent, Page, Section, Block, TextProps, ImageProps, ButtonProps, ListProps, ListItem } from '@builder/shared';
+import { SiteContent, Page, Section, Block, TextProps, ImageProps, ButtonProps, ListProps, ListItem, SiteSettings } from '@builder/shared';
+import { StylesService } from './styles.service';
 
 const execAsync = promisify(exec);
 
@@ -27,7 +28,10 @@ export class WordPressService {
 
   private wpPublicUrl: string;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private stylesService: StylesService,
+  ) {
     this.wpCliPath = this.configService.get('WP_CLI_PATH') || 'wp';
     this.wpMultisiteUrl = this.configService.get('WP_MULTISITE_URL') || 'http://localhost:8080';
     // Public URL for WP-CLI commands (must match WordPress DOMAIN_CURRENT_SITE)
@@ -131,6 +135,9 @@ export class WordPressService {
     try {
       const urlFlag = wpSiteUrl ? `--url=${wpSiteUrl}` : `--url=${this.wpPublicUrl}`;
 
+      // Inject premium CSS first
+      await this.injectPremiumCSS(content.settings, urlFlag);
+
       for (const page of content.pages) {
         const htmlContent = this.compilePageToHtml(page, content.settings.accentColor);
         const gutenbergBlocks = this.compilePageToGutenberg(page, content.settings.accentColor);
@@ -171,9 +178,38 @@ export class WordPressService {
       if (this.mockMode) {
         console.log('MOCK MODE: Simulating publish to WordPress');
         console.log('Pages to publish:', content.pages.map((p: Page) => p.title));
+        console.log('Premium CSS would be injected for style:', content.settings.stylePreset);
         return;
       }
       throw error;
+    }
+  }
+
+  /**
+   * Inject premium CSS into WordPress via the Customizer
+   */
+  private async injectPremiumCSS(settings: SiteSettings, urlFlag: string): Promise<void> {
+    try {
+      // Generate premium CSS based on settings
+      const premiumCSS = this.stylesService.generatePremiumCSS(settings);
+
+      // Escape CSS for shell command
+      const escapedCSS = this.escapeShell(premiumCSS);
+
+      // Update additional CSS in WordPress customizer
+      await this.runWpCli(
+        `option update custom_css_post_content '${escapedCSS}' ${urlFlag}`,
+      );
+
+      // Also set it via theme mod for better compatibility
+      await this.runWpCli(
+        `theme mod set custom_css '${escapedCSS}' ${urlFlag}`,
+      );
+
+      console.log('Premium CSS injected successfully');
+    } catch (error) {
+      console.error('Failed to inject premium CSS:', error);
+      // Don't throw - CSS injection failure shouldn't block publishing
     }
   }
 

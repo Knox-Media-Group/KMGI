@@ -13,12 +13,16 @@ import {
   ListProps,
   generateId,
 } from '@builder/shared';
+import { ImagesService } from './images.service';
 
 @Injectable()
 export class AiService {
   private openai: OpenAI | null;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private imagesService: ImagesService,
+  ) {
     const apiKey = this.configService.get('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
   }
@@ -27,7 +31,7 @@ export class AiService {
     // If no OpenAI key, use fallback content
     if (!this.openai) {
       console.log('No OpenAI API key, using fallback content generation');
-      return this.generateFallbackContent(settings);
+      return await this.generateFallbackContent(settings);
     }
 
     try {
@@ -40,7 +44,7 @@ export class AiService {
       };
     } catch (error) {
       console.error('AI generation failed, using fallback:', error);
-      return this.generateFallbackContent(settings);
+      return await this.generateFallbackContent(settings);
     }
   }
 
@@ -88,7 +92,7 @@ Respond ONLY with valid JSON, no markdown or explanation.`;
       return this.createFallbackHomePage(settings);
     }
 
-    return this.buildHomePage(settings, data);
+    return await this.buildHomePage(settings, data);
   }
 
   private async generateContactPage(settings: SiteSettings): Promise<Page> {
@@ -169,15 +173,19 @@ Respond ONLY with valid JSON array.`;
     }
   }
 
-  private buildHomePage(settings: SiteSettings, data: {
+  private async buildHomePage(settings: SiteSettings, data: {
     heroHeadline: string;
     heroSubheadline: string;
     aboutTitle: string;
     aboutText: string;
     services: Array<{ title: string; description: string }>;
     testimonials: Array<{ name: string; quote: string }>;
-  }): Page {
+  }): Promise<Page> {
     const ctaText = settings.primaryCta === 'call' ? 'Call Us Today' : settings.primaryCta === 'book' ? 'Book Now' : 'Get a Quote';
+
+    // Fetch real images for each section
+    const heroImage = await this.imagesService.getImage(settings.industry, 'hero', 0);
+    const aboutImage = await this.imagesService.getImage(settings.industry, 'about', 0);
 
     const sections: Section[] = [
       // Hero
@@ -189,7 +197,7 @@ Respond ONLY with valid JSON array.`;
           { id: generateId(), type: 'text', props: { content: data.heroHeadline, variant: 'h1' } as TextProps },
           { id: generateId(), type: 'text', props: { content: data.heroSubheadline, variant: 'body' } as TextProps },
           { id: generateId(), type: 'button', props: { text: ctaText, href: '#contact', variant: 'primary' } as ButtonProps },
-          { id: generateId(), type: 'image', props: { src: '/placeholder-hero.jpg', alt: 'Hero image' } as ImageProps },
+          { id: generateId(), type: 'image', props: { src: heroImage, alt: `${settings.businessName} - ${settings.industry}` } as ImageProps },
         ],
       },
       // About
@@ -200,7 +208,7 @@ Respond ONLY with valid JSON array.`;
         blocks: [
           { id: generateId(), type: 'text', props: { content: data.aboutTitle, variant: 'h2' } as TextProps },
           { id: generateId(), type: 'text', props: { content: data.aboutText, variant: 'body' } as TextProps },
-          { id: generateId(), type: 'image', props: { src: '/placeholder-about.jpg', alt: 'About us' } as ImageProps },
+          { id: generateId(), type: 'image', props: { src: aboutImage, alt: `About ${settings.businessName}` } as ImageProps },
         ],
       },
       // Services
@@ -267,12 +275,12 @@ Respond ONLY with valid JSON array.`;
     };
   }
 
-  private createFallbackHomePage(settings: SiteSettings): Page {
+  private async createFallbackHomePage(settings: SiteSettings): Promise<Page> {
     const aboutText = settings.description
       ? `${settings.businessName} — ${settings.description}`
       : `${settings.businessName} has been proudly serving our community with top-quality ${settings.industry.toLowerCase()} services. Our dedicated team brings years of experience and a commitment to excellence that sets us apart.`;
 
-    return this.buildHomePage(settings, {
+    return await this.buildHomePage(settings, {
       heroHeadline: `Welcome to ${settings.businessName}`,
       heroSubheadline: `Your trusted partner in ${settings.industry.toLowerCase()}. We deliver excellence with every interaction.`,
       aboutTitle: 'About Us',
@@ -289,8 +297,8 @@ Respond ONLY with valid JSON array.`;
     });
   }
 
-  private generateFallbackContent(settings: SiteSettings): SiteContent {
-    const homePage = this.createFallbackHomePage(settings);
+  private async generateFallbackContent(settings: SiteSettings): Promise<SiteContent> {
+    const homePage = await this.createFallbackHomePage(settings);
     const contactPage: Page = {
       title: 'Contact',
       slug: 'contact',
