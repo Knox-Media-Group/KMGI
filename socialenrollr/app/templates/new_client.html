@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}New Client - {{ brand.app_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-user-plus"></i> New Client Enrollment</h1>
+    <p class="subtitle">Enter client information to get started</p>
+</div>
+
+<form method="POST" action="/enroll/new" class="enrollment-form">
+    <div class="form-section">
+        <h3><i class="fas fa-user"></i> Personal Information</h3>
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="first_name">First Name *</label>
+                <input type="text" id="first_name" name="first_name" required placeholder="John">
+            </div>
+            <div class="form-group">
+                <label for="last_name">Last Name *</label>
+                <input type="text" id="last_name" name="last_name" required placeholder="Doe">
+            </div>
+            <div class="form-group">
+                <label for="email">Email Address *</label>
+                <input type="email" id="email" name="email" required placeholder="john@example.com">
+            </div>
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input type="tel" id="phone" name="phone" placeholder="(555) 123-4567">
+            </div>
+        </div>
+        <div class="form-group full-width">
+            <label for="bio">Bio / About</label>
+            <textarea id="bio" name="bio" rows="3" placeholder="A short bio for social media profiles..."></textarea>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <h3><i class="fas fa-house"></i> Home Address</h3>
+        <div class="form-grid">
+            <div class="form-group full-width">
+                <label for="home_address">Street Address</label>
+                <input type="text" id="home_address" name="home_address" placeholder="123 Main Street">
+            </div>
+            <div class="form-group">
+                <label for="home_city">City</label>
+                <input type="text" id="home_city" name="home_city" placeholder="Springfield">
+            </div>
+            <div class="form-group">
+                <label for="home_state">State</label>
+                <input type="text" id="home_state" name="home_state" placeholder="IL">
+            </div>
+            <div class="form-group">
+                <label for="home_zip">ZIP Code</label>
+                <input type="text" id="home_zip" name="home_zip" placeholder="62701">
+            </div>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <h3><i class="fas fa-building"></i> Business Information</h3>
+        <div class="form-grid">
+            <div class="form-group full-width">
+                <label for="business_name">Business Name</label>
+                <input type="text" id="business_name" name="business_name" placeholder="Doe Industries LLC">
+            </div>
+            <div class="form-group full-width">
+                <label for="business_address">Business Address</label>
+                <input type="text" id="business_address" name="business_address" placeholder="456 Commerce Blvd">
+            </div>
+            <div class="form-group">
+                <label for="business_city">City</label>
+                <input type="text" id="business_city" name="business_city" placeholder="Springfield">
+            </div>
+            <div class="form-group">
+                <label for="business_state">State</label>
+                <input type="text" id="business_state" name="business_state" placeholder="IL">
+            </div>
+            <div class="form-group">
+                <label for="business_zip">ZIP Code</label>
+                <input type="text" id="business_zip" name="business_zip" placeholder="62701">
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <a href="/" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fas fa-arrow-right"></i> Continue to Platform Selection
+        </button>
+    </div>
+</form>
+{% endblock %}

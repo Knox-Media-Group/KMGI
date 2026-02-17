@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ brand.app_name }}{% endblock %}</title>
+    {% if brand.app_favicon_url %}
+    <link rel="icon" href="{{ brand.app_favicon_url }}">
+    {% endif %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        :root {
+            --primary: {{ brand.primary_color }};
+            --secondary: {{ brand.secondary_color }};
+            --accent: {{ brand.accent_color }};
+            --bg: {{ brand.background_color }};
+            --text: {{ brand.text_color }};
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">
+                {% if brand.app_logo_url %}
+                <img src="{{ brand.app_logo_url }}" alt="{{ brand.app_name }}" class="nav-logo">
+                {% else %}
+                <i class="fas fa-share-nodes"></i>
+                {% endif %}
+                <span>{{ brand.app_name }}</span>
+            </a>
+            <div class="nav-links">
+                <a href="/" class="nav-link"><i class="fas fa-gauge-high"></i> Dashboard</a>
+                <a href="/enroll/new" class="nav-link"><i class="fas fa-user-plus"></i> New Client</a>
+                <a href="/enroll/clients" class="nav-link"><i class="fas fa-users"></i> Clients</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            {% if brand.company_name %}
+            <p>&copy; 2026 {{ brand.company_name }}. Powered by {{ brand.app_name }}.</p>
+            {% endif %}
+            {% if brand.support_email %}
+            <p><a href="mailto:{{ brand.support_email }}">{{ brand.support_email }}</a></p>
+            {% endif %}
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Clients - {{ brand.app_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-users"></i> Clients</h1>
+    <a href="/enroll/new" class="btn btn-primary"><i class="fas fa-user-plus"></i> New Client</a>
+</div>
+
+{% if clients %}
+<div class="table-wrap">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Business</th>
+                <th>Platforms</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for client in clients %}
+            {% set total = client.enrollments | length %}
+            {% set completed = client.enrollments | selectattr('status', 'equalto', 'completed') | list | length %}
+            <tr>
+                <td><strong>{{ client.full_name }}</strong></td>
+                <td>{{ client.email }}</td>
+                <td>{{ client.phone or '—' }}</td>
+                <td>{{ client.business_name or '—' }}</td>
+                <td><span class="badge">{{ total }}</span></td>
+                <td>
+                    {% if total == 0 %}
+                    <span class="status-badge status-pending">Not Started</span>
+                    {% elif completed == total %}
+                    <span class="status-badge status-completed">All Done</span>
+                    {% else %}
+                    <span class="status-badge status-in_progress">{{ completed }}/{{ total }}</span>
+                    {% endif %}
+                </td>
+                <td class="action-cell">
+                    <a href="/enroll/{{ client.id }}/dashboard" class="btn btn-primary btn-sm">Dashboard</a>
+                    <form method="POST" action="/enroll/{{ client.id }}/delete" class="inline-form"
+                          onsubmit="return confirm('Delete {{ client.full_name }} and all enrollments?');">
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <i class="fas fa-users"></i>
+    <h3>No clients yet</h3>
+    <p>Add your first client to get started with social media enrollment.</p>
+    <a href="/enroll/new" class="btn btn-primary btn-lg"><i class="fas fa-user-plus"></i> Add First Client</a>
+</div>
+{% endif %}
+{% endblock %}

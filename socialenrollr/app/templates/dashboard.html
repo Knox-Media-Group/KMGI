@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - {{ brand.app_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ brand.app_name }}</h1>
+    <p class="subtitle">{{ brand.app_tagline }}</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon" style="background: var(--primary);"><i class="fas fa-users"></i></div>
+        <div class="stat-info">
+            <span class="stat-number">{{ total_clients }}</span>
+            <span class="stat-label">Total Clients</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: var(--accent);"><i class="fas fa-share-nodes"></i></div>
+        <div class="stat-info">
+            <span class="stat-number">{{ total_enrollments }}</span>
+            <span class="stat-label">Enrollments</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: #22c55e;"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-info">
+            <span class="stat-number">{{ completed }}</span>
+            <span class="stat-label">Completed</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: #f59e0b;"><i class="fas fa-clock"></i></div>
+        <div class="stat-info">
+            <span class="stat-number">{{ pending + in_progress }}</span>
+            <span class="stat-label">In Progress</span>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-header">
+        <h2>Quick Actions</h2>
+    </div>
+    <div class="action-grid">
+        <a href="/enroll/new" class="action-card">
+            <i class="fas fa-user-plus"></i>
+            <span>New Client Enrollment</span>
+            <p>Add a new client and enroll them on social media platforms</p>
+        </a>
+        <a href="/enroll/clients" class="action-card">
+            <i class="fas fa-list-check"></i>
+            <span>Manage Clients</span>
+            <p>View and manage existing clients and their enrollments</p>
+        </a>
+    </div>
+</div>
+
+{% if recent_clients %}
+<div class="section">
+    <div class="section-header">
+        <h2>Recent Clients</h2>
+        <a href="/enroll/clients" class="btn btn-secondary btn-sm">View All</a>
+    </div>
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Business</th>
+                    <th>Enrollments</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for client in recent_clients %}
+                <tr>
+                    <td><strong>{{ client.full_name }}</strong></td>
+                    <td>{{ client.email }}</td>
+                    <td>{{ client.business_name or '—' }}</td>
+                    <td>
+                        <span class="badge">{{ client.enrollments | length }} platforms</span>
+                    </td>
+                    <td>
+                        <a href="/enroll/{{ client.id }}/dashboard" class="btn btn-primary btn-sm">View</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

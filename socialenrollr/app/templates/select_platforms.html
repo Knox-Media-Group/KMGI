@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Select Platforms - {{ brand.app_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-share-nodes"></i> Select Platforms</h1>
+    <p class="subtitle">Choose platforms for <strong>{{ client.full_name }}</strong> and pick usernames</p>
+</div>
+
+<form method="POST" id="platform-form">
+    <div class="platform-grid">
+        {% for key, plat in platforms.items() %}
+        <div class="platform-card" data-platform="{{ key }}">
+            <div class="platform-header">
+                <label class="platform-toggle">
+                    <input type="checkbox" name="platforms" value="{{ key }}" class="platform-checkbox">
+                    <div class="platform-icon" style="background: {{ plat.color }};">
+                        <i class="{{ plat.icon }}"></i>
+                    </div>
+                    <div class="platform-name">{{ plat.name }}</div>
+                </label>
+            </div>
+            <p class="platform-desc">{{ plat.description }}</p>
+
+            <div class="username-section" style="display: none;">
+                <label class="username-label">Username:</label>
+                <select name="username_{{ key }}" class="username-select">
+                    {% for u in platform_usernames.get(key, []) %}
+                    <option value="{{ u.username }}">{{ u.username }} ({{ u.style }})</option>
+                    {% endfor %}
+                </select>
+                <input type="text" name="username_custom_{{ key }}" class="username-custom"
+                       placeholder="Or type a custom username...">
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="form-actions">
+        <a href="/enroll/new" class="btn btn-secondary">Back</a>
+        <div class="select-actions">
+            <button type="button" class="btn btn-secondary" id="select-all-btn">Select All</button>
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-rocket"></i> Start Enrollment
+            </button>
+        </div>
+    </div>
+</form>
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle username section when platform is selected
+    document.querySelectorAll('.platform-checkbox').forEach(cb => {
+        cb.addEventListener('change', function() {
+            const card = this.closest('.platform-card');
+            const section = card.querySelector('.username-section');
+            section.style.display = this.checked ? 'block' : 'none';
+            if (this.checked) card.classList.add('selected');
+            else card.classList.remove('selected');
+        });
+    });
+
+    // Custom username overrides select
+    document.querySelectorAll('.username-custom').forEach(input => {
+        input.addEventListener('input', function() {
+            const key = this.closest('.platform-card').dataset.platform;
+            const select = this.closest('.platform-card').querySelector('.username-select');
+            if (this.value.trim()) {
+                // Update the hidden form value
+                const hiddenName = 'username_' + key;
+                let hidden = document.querySelector(`input[name="${hiddenName}"][type="hidden"]`);
+                if (!hidden) {
+                    hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.name = hiddenName;
+                    this.closest('.platform-card').appendChild(hidden);
+                }
+                hidden.value = this.value.trim();
+                select.disabled = true;
+            } else {
+                select.disabled = false;
+                const hidden = this.closest('.platform-card').querySelector(`input[name="username_${key}"][type="hidden"]`);
+                if (hidden) hidden.remove();
+            }
+        });
+    });
+
+    // Select All button
+    document.getElementById('select-all-btn').addEventListener('click', function() {
+        const checkboxes = document.querySelectorAll('.platform-checkbox');
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        checkboxes.forEach(cb => {
+            cb.checked = !allChecked;
+            cb.dispatchEvent(new Event('change'));
+        });
+        this.textContent = allChecked ? 'Select All' : 'Deselect All';
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}
