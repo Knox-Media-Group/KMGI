@@ -10,6 +10,7 @@ import { WordPressModule } from './wordpress/wordpress.module';
 import { AiModule } from './ai/ai.module';
 import { PerformanceModule } from './performance/performance.module';
 import { ApiModule } from './api/api.module';
+import { HostingModule } from './hosting/hosting.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -29,6 +30,7 @@ import { HealthController } from './health.controller';
     AiModule,
     PerformanceModule,
     ApiModule,
+    HostingModule,
   ],
 })
 export class AppModule {}

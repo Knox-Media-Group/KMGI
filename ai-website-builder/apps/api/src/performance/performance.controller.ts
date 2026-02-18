@@ -7,10 +7,12 @@ class AnalyzeUrlDto {
 }
 
 class OptimizeDto {
+  wpSiteUrl?: string;
   config: Partial<CDNConfig>;
 }
 
 class PurgeCacheDto {
+  wpSiteUrl?: string;
   paths?: string[];
 }
 
@@ -118,7 +120,7 @@ export class PerformanceController {
    */
   @Post(':siteId/optimize')
   async optimize(@Param('siteId') siteId: string, @Body() dto: OptimizeDto) {
-    return this.performanceService.optimizeSite(siteId, dto.config);
+    return this.performanceService.optimizeSite(siteId, dto.wpSiteUrl || '', dto.config);
   }
 
   /**
@@ -139,7 +141,7 @@ export class PerformanceController {
    */
   @Post(':siteId/purge')
   async purgeCache(@Param('siteId') siteId: string, @Body() dto: PurgeCacheDto) {
-    return this.performanceService.purgeCache(siteId, dto.paths);
+    return this.performanceService.purgeCache(siteId, dto.wpSiteUrl, dto.paths);
   }
 
   /**

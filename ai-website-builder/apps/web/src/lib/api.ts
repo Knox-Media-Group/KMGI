@@ -250,3 +250,148 @@ export const performanceApi = {
   getCDNConfig: (token: string) =>
     api<CDNConfig>('/performance/cdn-config', { token }),
 };
+
+// AI Image Generation API
+export interface AIImageResult {
+  url: string;
+  revisedPrompt: string;
+  source: 'ai-generated' | 'unsplash' | 'fallback';
+}
+
+export const aiImagesApi = {
+  generate: (prompt: string, options: { style?: string; size?: string; quality?: string }, token: string) =>
+    api<AIImageResult>('/ai/images/generate', {
+      method: 'POST',
+      body: { prompt, ...options },
+      token,
+    }),
+
+  generateBusiness: (businessName: string, industry: string, sectionType: string, style: string, token: string) =>
+    api<AIImageResult>('/ai/images/business', {
+      method: 'POST',
+      body: { businessName, industry, sectionType, style },
+      token,
+    }),
+
+  generateLogo: (businessName: string, industry: string, colorScheme: string, token: string) =>
+    api<AIImageResult>('/ai/images/logo', {
+      method: 'POST',
+      body: { businessName, industry, colorScheme },
+      token,
+    }),
+};
+
+// Hosting API
+export interface HostingStatus {
+  siteId: string;
+  domain: string;
+  ssl: {
+    enabled: boolean;
+    provider: string;
+    expiresAt: string | null;
+    autoRenew: boolean;
+    grade: string;
+  };
+  uptime: {
+    current: boolean;
+    uptimePercentage: number;
+    lastDowntime: string | null;
+    responseTime: number;
+    checksLast24h: number;
+    failedChecks: number;
+  };
+  storage: {
+    used: number;
+    total: number;
+    percentage: number;
+    breakdown: {
+      wordpress: number;
+      uploads: number;
+      database: number;
+      plugins: number;
+      themes: number;
+    };
+  };
+  backups: {
+    lastBackup: string | null;
+    nextBackup: string | null;
+    frequency: string;
+    retention: number;
+    autoBackup: boolean;
+    backups: Array<{
+      id: string;
+      createdAt: string;
+      size: number;
+      type: string;
+      status: string;
+    }>;
+  };
+  phpVersion: string;
+  wordpressVersion: string;
+  serverLocation: string;
+}
+
+export interface DomainInfo {
+  domain: string;
+  connected: boolean;
+  dns: {
+    aRecord: string;
+    cnameRecord: string;
+    nameservers: string[];
+  };
+  ssl: HostingStatus['ssl'];
+}
+
+export const hostingApi = {
+  getStatus: (siteId: string, domain: string, token: string) =>
+    api<HostingStatus>(`/hosting/${siteId}/status?domain=${encodeURIComponent(domain)}`, { token }),
+
+  getSSL: (domain: string, token: string) =>
+    api<HostingStatus['ssl']>(`/hosting/ssl/${domain}`, { token }),
+
+  provisionSSL: (domain: string, token: string) =>
+    api<{ success: boolean; message: string }>(`/hosting/ssl/${domain}/provision`, { method: 'POST', token }),
+
+  getStorage: (siteId: string, token: string) =>
+    api<HostingStatus['storage']>(`/hosting/${siteId}/storage`, { token }),
+
+  getUptime: (domain: string, token: string) =>
+    api<HostingStatus['uptime']>(`/hosting/uptime/${domain}`, { token }),
+
+  getBackups: (siteId: string, token: string) =>
+    api<HostingStatus['backups']>(`/hosting/${siteId}/backups`, { token }),
+
+  createBackup: (siteId: string, type: string, token: string) =>
+    api<{ success: boolean; backupId: string; message: string }>(`/hosting/${siteId}/backups`, {
+      method: 'POST',
+      body: { type },
+      token,
+    }),
+
+  restoreBackup: (siteId: string, backupId: string, token: string) =>
+    api<{ success: boolean; message: string }>(`/hosting/${siteId}/backups/${backupId}/restore`, {
+      method: 'POST',
+      token,
+    }),
+
+  getDomain: (domain: string, token: string) =>
+    api<DomainInfo>(`/hosting/domain/${domain}`, { token }),
+
+  connectDomain: (siteId: string, domain: string, token: string) =>
+    api<{
+      success: boolean;
+      message: string;
+      dnsRecords: Array<{ type: string; name: string; value: string }>;
+    }>(`/hosting/${siteId}/domain/connect`, {
+      method: 'POST',
+      body: { domain },
+      token,
+    }),
+
+  updateWordPress: (siteId: string, wpSiteUrl: string, token: string) =>
+    api<{ success: boolean; message: string }>(`/hosting/${siteId}/update`, {
+      method: 'POST',
+      body: { wpSiteUrl },
+      token,
+    }),
+};

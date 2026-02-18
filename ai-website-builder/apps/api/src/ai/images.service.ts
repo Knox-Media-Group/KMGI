@@ -1,5 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import OpenAI from 'openai';
+
+export interface AIImageRequest {
+  prompt: string;
+  style?: 'natural' | 'vivid';
+  size?: '1024x1024' | '1792x1024' | '1024x1792';
+  quality?: 'standard' | 'hd';
+}
+
+export interface AIImageResult {
+  url: string;
+  revisedPrompt: string;
+  source: 'ai-generated' | 'unsplash' | 'fallback';
+}
 
 // Industry to search term mappings for better image results
 const INDUSTRY_SEARCH_TERMS: Record<string, string[]> = {
@@ -46,14 +60,145 @@ interface UnsplashImage {
 @Injectable()
 export class ImagesService {
   private unsplashAccessKey: string | null;
+  private openai: OpenAI | null;
   private cache: Map<string, string[]> = new Map();
+  private aiImageCache: Map<string, AIImageResult> = new Map();
 
   constructor(private configService: ConfigService) {
     this.unsplashAccessKey = this.configService.get('UNSPLASH_ACCESS_KEY') || null;
+    const openaiKey = this.configService.get('OPENAI_API_KEY');
+    this.openai = openaiKey ? new OpenAI({ apiKey: openaiKey }) : null;
 
     if (!this.unsplashAccessKey) {
       console.log('ImagesService: No Unsplash API key, will use curated fallback images');
     }
+    if (this.openai) {
+      console.log('ImagesService: AI image generation enabled (DALL-E 3)');
+    }
+  }
+
+  // ============================================
+  // AI Image Generation (DALL-E 3)
+  // ============================================
+
+  /**
+   * Generate a custom AI image using DALL-E 3
+   */
+  async generateAIImage(request: AIImageRequest): Promise<AIImageResult> {
+    const cacheKey = `ai-${request.prompt}-${request.style}-${request.size}`;
+    if (this.aiImageCache.has(cacheKey)) {
+      return this.aiImageCache.get(cacheKey)!;
+    }
+
+    if (!this.openai) {
+      // Fallback to Unsplash-style image if no OpenAI key
+      return {
+        url: await this.getFallbackImage('default', 'hero'),
+        revisedPrompt: request.prompt,
+        source: 'fallback',
+      };
+    }
+
+    try {
+      const response = await this.openai.images.generate({
+        model: 'dall-e-3',
+        prompt: request.prompt,
+        n: 1,
+        size: request.size || '1792x1024',
+        quality: request.quality || 'hd',
+        style: request.style || 'natural',
+      });
+
+      const imageData = response.data?.[0];
+      if (!imageData?.url) {
+        throw new Error('No image data returned');
+      }
+
+      const result: AIImageResult = {
+        url: imageData.url,
+        revisedPrompt: imageData.revised_prompt || request.prompt,
+        source: 'ai-generated',
+      };
+
+      this.aiImageCache.set(cacheKey, result);
+      return result;
+    } catch (error) {
+      console.error('DALL-E generation failed:', error);
+      return {
+        url: await this.getFallbackImage('default', 'hero'),
+        revisedPrompt: request.prompt,
+        source: 'fallback',
+      };
+    }
+  }
+
+  /**
+   * Generate a website-specific image based on business context
+   */
+  async generateBusinessImage(
+    businessName: string,
+    industry: string,
+    sectionType: string,
+    style: 'photorealistic' | 'illustration' | 'abstract' | 'minimal' = 'photorealistic',
+  ): Promise<AIImageResult> {
+    const styleMap = {
+      photorealistic: 'Professional photorealistic image,',
+      illustration: 'Modern flat illustration style,',
+      abstract: 'Abstract geometric art style,',
+      minimal: 'Clean minimal design with whitespace,',
+    };
+
+    const sectionPrompts: Record<string, string> = {
+      hero: `${styleMap[style]} stunning hero banner for a ${industry} business called "${businessName}". Wide panoramic composition, premium quality, bright and inviting, no text or logos.`,
+      about: `${styleMap[style]} professional team or workplace photo for a ${industry} company. Shows competence and trust, warm lighting, no text.`,
+      services: `${styleMap[style]} visual representation of ${industry} services being performed. High quality, professional setting, no text.`,
+      testimonials: `${styleMap[style]} happy satisfied customer or client in a ${industry} context. Genuine and warm, no text.`,
+      gallery: `${styleMap[style]} portfolio showcase image for a ${industry} business. Shows quality work or products, no text.`,
+      contact: `${styleMap[style]} welcoming office or storefront for a ${industry} business. Professional and approachable, no text.`,
+      team: `${styleMap[style]} diverse professional team working together in a ${industry} setting. Collaborative and friendly, no text.`,
+      features: `${styleMap[style]} key feature or benefit visualization for a ${industry} company. Clean and modern, no text.`,
+    };
+
+    const prompt = sectionPrompts[sectionType] || sectionPrompts.hero;
+
+    return this.generateAIImage({
+      prompt,
+      style: style === 'photorealistic' ? 'natural' : 'vivid',
+      size: sectionType === 'hero' ? '1792x1024' : '1024x1024',
+      quality: 'hd',
+    });
+  }
+
+  /**
+   * Generate a logo concept for a business
+   */
+  async generateLogoConcept(
+    businessName: string,
+    industry: string,
+    colorScheme: string = 'modern blue and white',
+  ): Promise<AIImageResult> {
+    return this.generateAIImage({
+      prompt: `Professional minimalist logo design for "${businessName}", a ${industry} business. ${colorScheme} color scheme. Clean vector style on white background. Simple iconic symbol that represents ${industry}. No text in the logo.`,
+      style: 'vivid',
+      size: '1024x1024',
+      quality: 'hd',
+    });
+  }
+
+  /**
+   * Generate a favicon/icon for a business
+   */
+  async generateIcon(
+    businessName: string,
+    industry: string,
+    primaryColor: string = '#6366f1',
+  ): Promise<AIImageResult> {
+    return this.generateAIImage({
+      prompt: `Simple app icon or favicon for a ${industry} business called "${businessName}". Single clean symbol on ${primaryColor} background. Minimal design, works at small sizes. Square format.`,
+      style: 'vivid',
+      size: '1024x1024',
+      quality: 'standard',
+    });
   }
 
   /**
