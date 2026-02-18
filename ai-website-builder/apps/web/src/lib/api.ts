@@ -500,3 +500,187 @@ export const analyticsApi = {
       token,
     }),
 };
+
+// E-commerce API
+export interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  status: 'publish' | 'draft' | 'pending';
+  price: string;
+  salePrice: string | null;
+  sku: string;
+  stockQuantity: number;
+  stockStatus: string;
+  categories: string[];
+  images: string[];
+  description: string;
+  shortDescription: string;
+  dateCreated: string;
+  totalSales: number;
+}
+
+export interface Order {
+  id: string;
+  status: 'pending' | 'processing' | 'shipped' | 'completed' | 'refunded' | 'cancelled';
+  customer: { name: string; email: string };
+  items: Array<{ name: string; quantity: number; price: string }>;
+  total: string;
+  dateCreated: string;
+  paymentMethod: string;
+}
+
+export interface EcommerceStats {
+  totalOrders: number;
+  totalRevenue: number;
+  totalProducts: number;
+  averageOrderValue: number;
+  ordersToday: number;
+  revenueToday: number;
+  pendingOrders: number;
+  lowStockProducts: number;
+  topProducts: Array<{ id: string; name: string; sales: number; revenue: number }>;
+  recentOrders: Order[];
+}
+
+export const ecommerceApi = {
+  setup: (siteId: string, wpSiteUrl: string, token: string) =>
+    api<{ success: boolean; message: string }>(`/ecommerce/${siteId}/setup?wpSiteUrl=${encodeURIComponent(wpSiteUrl)}`, {
+      method: 'POST',
+      token,
+    }),
+
+  getStats: (siteId: string, wpSiteUrl: string, token: string) =>
+    api<EcommerceStats>(`/ecommerce/${siteId}/stats?wpSiteUrl=${encodeURIComponent(wpSiteUrl)}`, { token }),
+
+  listProducts: (siteId: string, wpSiteUrl: string, page: number, token: string) =>
+    api<{ products: Product[]; total: number; page: number; perPage: number }>(
+      `/ecommerce/${siteId}/products?wpSiteUrl=${encodeURIComponent(wpSiteUrl)}&page=${page}`,
+      { token }
+    ),
+
+  getProduct: (siteId: string, productId: string, wpSiteUrl: string, token: string) =>
+    api<Product>(`/ecommerce/${siteId}/products/${productId}?wpSiteUrl=${encodeURIComponent(wpSiteUrl)}`, { token }),
+
+  createProduct: (siteId: string, wpSiteUrl: string, product: Partial<Product>, token: string) =>
+    api<{ success: boolean; productId: string; message: string }>(`/ecommerce/${siteId}/products?wpSiteUrl=${encodeURIComponent(wpSiteUrl)}`, {
+      method: 'POST',
+      body: product,
+      token,
+    }),
+
+  updateProduct: (siteId: string, productId: string, wpSiteUrl: string, product: Partial<Product>, token: string) =>
+    api<{ success: boolean; message: string }>(`/ecommerce/${siteId}/products/${productId}?wpSiteUrl=${encodeURIComponent(wpSiteUrl)}`, {
+      method: 'PUT',
+      body: product,
+      token,
+    }),
+
+  deleteProduct: (siteId: string, productId: string, wpSiteUrl: string, token: string) =>
+    api<{ success: boolean; message: string }>(`/ecommerce/${siteId}/products/${productId}?wpSiteUrl=${encodeURIComponent(wpSiteUrl)}`, {
+      method: 'DELETE',
+      token,
+    }),
+
+  listOrders: (siteId: string, wpSiteUrl: string, page: number, token: string) =>
+    api<{ orders: Order[]; total: number; page: number; perPage: number }>(
+      `/ecommerce/${siteId}/orders?wpSiteUrl=${encodeURIComponent(wpSiteUrl)}&page=${page}`,
+      { token }
+    ),
+
+  updateOrderStatus: (siteId: string, orderId: string, wpSiteUrl: string, status: string, token: string) =>
+    api<{ success: boolean; message: string }>(`/ecommerce/${siteId}/orders/${orderId}/status?wpSiteUrl=${encodeURIComponent(wpSiteUrl)}`, {
+      method: 'PUT',
+      body: { status },
+      token,
+    }),
+
+  setupPayments: (siteId: string, wpSiteUrl: string, config: Record<string, unknown>, token: string) =>
+    api<{ success: boolean; message: string }>(`/ecommerce/${siteId}/payments/setup?wpSiteUrl=${encodeURIComponent(wpSiteUrl)}`, {
+      method: 'POST',
+      body: config,
+      token,
+    }),
+
+  listCategories: (siteId: string, wpSiteUrl: string, token: string) =>
+    api<{ categories: Array<{ id: string; name: string; slug: string; count: number }> }>(
+      `/ecommerce/${siteId}/categories?wpSiteUrl=${encodeURIComponent(wpSiteUrl)}`,
+      { token }
+    ),
+};
+
+// Staging Environment API
+export interface StagingStatus {
+  exists: boolean;
+  siteId: string;
+  stagingUrl: string | null;
+  productionUrl: string;
+  createdAt: string | null;
+  lastSynced: string | null;
+  changes: number;
+  status?: string;
+  wpVersion?: string;
+  phpVersion?: string;
+  diskUsage?: {
+    used: number;
+    total: number;
+    percentage: number;
+  };
+}
+
+export interface StagingChange {
+  type: 'page' | 'plugin' | 'theme' | 'media' | 'setting';
+  action: 'added' | 'modified' | 'deleted';
+  name: string;
+  path: string | null;
+  modifiedAt: string;
+  details: string;
+}
+
+export interface StagingHistoryEntry {
+  id: string;
+  action: 'push_to_production' | 'sync_from_production' | 'create_staging' | 'delete_staging';
+  user: string;
+  timestamp: string;
+  changes: number;
+  status: 'completed' | 'failed' | 'in_progress';
+  note: string;
+}
+
+export const stagingApi = {
+  getStatus: (siteId: string, wpSiteUrl: string, token: string) =>
+    api<StagingStatus>(`/staging/${siteId}/status?wpSiteUrl=${encodeURIComponent(wpSiteUrl)}`, { token }),
+
+  create: (siteId: string, wpSiteUrl: string, name: string | undefined, token: string) =>
+    api<{ success: boolean; stagingUrl: string; message: string; createdAt: string }>(
+      `/staging/${siteId}/create?wpSiteUrl=${encodeURIComponent(wpSiteUrl)}`,
+      { method: 'POST', body: { name }, token }
+    ),
+
+  pushToProduction: (siteId: string, wpSiteUrl: string, stagingUrl: string, token: string) =>
+    api<{ success: boolean; message: string; pushedAt: string }>(
+      `/staging/${siteId}/push?wpSiteUrl=${encodeURIComponent(wpSiteUrl)}&stagingUrl=${encodeURIComponent(stagingUrl)}`,
+      { method: 'POST', token }
+    ),
+
+  syncFromProduction: (siteId: string, wpSiteUrl: string, stagingUrl: string, token: string) =>
+    api<{ success: boolean; message: string; syncedAt: string }>(
+      `/staging/${siteId}/sync?wpSiteUrl=${encodeURIComponent(wpSiteUrl)}&stagingUrl=${encodeURIComponent(stagingUrl)}`,
+      { method: 'POST', token }
+    ),
+
+  delete: (siteId: string, stagingUrl: string, token: string) =>
+    api<{ success: boolean; message: string }>(`/staging/${siteId}?stagingUrl=${encodeURIComponent(stagingUrl)}`, {
+      method: 'DELETE',
+      token,
+    }),
+
+  getChanges: (siteId: string, wpSiteUrl: string, stagingUrl: string, token: string) =>
+    api<{ changes: StagingChange[]; summary: { added: number; modified: number; deleted: number; total: number } }>(
+      `/staging/${siteId}/changes?wpSiteUrl=${encodeURIComponent(wpSiteUrl)}&stagingUrl=${encodeURIComponent(stagingUrl)}`,
+      { token }
+    ),
+
+  getHistory: (siteId: string, token: string) =>
+    api<{ history: StagingHistoryEntry[] }>(`/staging/${siteId}/history`, { token }),
+};
