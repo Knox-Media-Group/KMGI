@@ -531,11 +531,305 @@ export class WordPressService {
     const sectionClass = `section-${section.type}`;
     const styleClass = section.style?.darkMode ? ' dark-mode' : '';
     const paddingClass = section.style?.padding ? ` padding-${section.style.padding}` : '';
+    const classes = `${sectionClass}${styleClass}${paddingClass}`;
 
-    const blocks = section.blocks.map((block: Block) => this.compileBlockToGutenberg(block, settings)).join('\n');
+    // Build blocks with proper layout structure per section type
+    const blocks = section.blocks.map((block: Block) => this.compileBlockToGutenberg(block, settings));
 
-    return `<!-- wp:group {"className":"${sectionClass}${styleClass}${paddingClass}"} -->
-<div class="wp-block-group ${sectionClass}${styleClass}${paddingClass}">${blocks}</div>
+    // Separate blocks by type for layout purposes
+    const headings = blocks.filter((_b, i) => {
+      const block = section.blocks[i];
+      return block.type === 'text' && ['h1', 'h2', 'h3', 'h4'].includes((block.props as TextProps).variant);
+    });
+    const paragraphs = blocks.filter((_b, i) => {
+      const block = section.blocks[i];
+      return block.type === 'text' && !['h1', 'h2', 'h3', 'h4'].includes((block.props as TextProps).variant);
+    });
+    const images = blocks.filter((_b, i) => section.blocks[i].type === 'image');
+    const buttons = blocks.filter((_b, i) => section.blocks[i].type === 'button');
+    const lists = blocks.filter((_b, i) => section.blocks[i].type === 'list');
+    const cards = blocks.filter((_b, i) => section.blocks[i].type === 'card');
+    const stats = blocks.filter((_b, i) => section.blocks[i].type === 'stat');
+    const teamMembers = blocks.filter((_b, i) => section.blocks[i].type === 'teamMember');
+    const timelineItems = blocks.filter((_b, i) => section.blocks[i].type === 'timelineItem');
+    const otherBlocks = blocks.filter((_b, i) => {
+      const t = section.blocks[i].type;
+      return !['text', 'image', 'button', 'list', 'card', 'stat', 'teamMember', 'timelineItem'].includes(t);
+    });
+
+    switch (section.type) {
+      case 'hero':
+        return this.compileHeroSection(classes, headings, paragraphs, images, buttons, otherBlocks);
+      case 'features':
+        return this.compileFeaturesSection(classes, headings, paragraphs, lists, cards, otherBlocks);
+      case 'services':
+        return this.compileServicesSection(classes, headings, paragraphs, lists, cards, otherBlocks);
+      case 'about':
+        return this.compileAboutSection(classes, headings, paragraphs, images, buttons, otherBlocks);
+      case 'testimonials':
+        return this.compileTestimonialsSection(classes, headings, paragraphs, lists, cards, otherBlocks);
+      case 'team':
+        return this.compileTeamSection(classes, headings, paragraphs, teamMembers, otherBlocks);
+      case 'stats':
+        return this.compileStatsSection(classes, headings, stats, otherBlocks);
+      case 'timeline':
+        return this.compileTimelineSection(classes, headings, paragraphs, timelineItems, otherBlocks);
+      case 'cta':
+        return this.compileCtaSection(classes, headings, paragraphs, buttons, otherBlocks);
+      case 'contact':
+      case 'contactForm':
+        return this.compileContactSection(classes, section.type, headings, paragraphs, blocks, otherBlocks);
+      case 'gallery':
+        return this.compileGallerySection(classes, headings, images, otherBlocks);
+      case 'products':
+      case 'pricing':
+        return this.compilePricingSection(classes, headings, paragraphs, cards, otherBlocks);
+      default: {
+        // Fallback: wrap with container
+        const allBlocks = blocks.join('\n');
+        return `<!-- wp:group {"className":"${classes}"} -->
+<div class="wp-block-group ${classes}">
+<div class="section-container">${allBlocks}</div>
+</div>
+<!-- /wp:group -->`;
+      }
+    }
+  }
+
+  // =============================================
+  // Premium Section Layout Compilers
+  // =============================================
+
+  private compileHeroSection(classes: string, headings: string[], paragraphs: string[], images: string[], buttons: string[], others: string[]): string {
+    const bgImage = images.length > 0 ? images[0] : '';
+    const buttonGroup = buttons.length > 0
+      ? `<div class="hero-buttons">${buttons.join('\n')}</div>`
+      : '';
+
+    return `<!-- wp:group {"className":"${classes}"} -->
+<div class="wp-block-group ${classes}">
+${bgImage}
+<div class="hero-overlay"></div>
+<div class="section-container">
+<div class="hero-content">
+<div class="hero-badge"><span>Welcome</span></div>
+${headings.join('\n')}
+${paragraphs.join('\n')}
+${buttonGroup}
+</div>
+${images.length > 1 ? `<div class="hero-visual">${images.slice(1).join('\n')}</div>` : ''}
+</div>
+${others.join('\n')}
+</div>
+<!-- /wp:group -->`;
+  }
+
+  private compileFeaturesSection(classes: string, headings: string[], paragraphs: string[], lists: string[], cards: string[], others: string[]): string {
+    const headerBlock = headings.length > 0 || paragraphs.length > 0
+      ? `<div class="section-header">${headings.join('\n')}${paragraphs.join('\n')}</div>`
+      : '';
+
+    const gridContent = cards.length > 0
+      ? `<div class="features-grid">${cards.join('\n')}</div>`
+      : lists.length > 0
+        ? `<div class="features-grid">${lists.join('\n')}</div>`
+        : '';
+
+    return `<!-- wp:group {"className":"${classes}"} -->
+<div class="wp-block-group ${classes}">
+<div class="section-container">
+${headerBlock}
+${gridContent}
+${others.join('\n')}
+</div>
+</div>
+<!-- /wp:group -->`;
+  }
+
+  private compileServicesSection(classes: string, headings: string[], paragraphs: string[], lists: string[], cards: string[], others: string[]): string {
+    const headerBlock = headings.length > 0 || paragraphs.length > 0
+      ? `<div class="section-header">${headings.join('\n')}${paragraphs.join('\n')}</div>`
+      : '';
+
+    const gridContent = cards.length > 0
+      ? `<div class="services-grid">${cards.join('\n')}</div>`
+      : lists.length > 0
+        ? `<div class="services-grid">${lists.join('\n')}</div>`
+        : '';
+
+    return `<!-- wp:group {"className":"${classes}"} -->
+<div class="wp-block-group ${classes}">
+<div class="section-container">
+${headerBlock}
+${gridContent}
+${others.join('\n')}
+</div>
+</div>
+<!-- /wp:group -->`;
+  }
+
+  private compileAboutSection(classes: string, headings: string[], paragraphs: string[], images: string[], buttons: string[], others: string[]): string {
+    const hasImage = images.length > 0;
+
+    if (hasImage) {
+      return `<!-- wp:group {"className":"${classes}"} -->
+<div class="wp-block-group ${classes}">
+<div class="section-container">
+<div class="about-layout">
+<div class="about-image-col">
+<div class="about-image-wrapper">
+${images[0]}
+<div class="about-image-accent"></div>
+</div>
+</div>
+<div class="about-content-col">
+${headings.join('\n')}
+${paragraphs.join('\n')}
+${buttons.length > 0 ? `<div class="about-buttons">${buttons.join('\n')}</div>` : ''}
+</div>
+</div>
+${others.join('\n')}
+</div>
+</div>
+<!-- /wp:group -->`;
+    }
+
+    return `<!-- wp:group {"className":"${classes}"} -->
+<div class="wp-block-group ${classes}">
+<div class="section-container">
+<div class="section-header">
+${headings.join('\n')}
+</div>
+${paragraphs.join('\n')}
+${buttons.length > 0 ? `<div class="about-buttons">${buttons.join('\n')}</div>` : ''}
+${others.join('\n')}
+</div>
+</div>
+<!-- /wp:group -->`;
+  }
+
+  private compileTestimonialsSection(classes: string, headings: string[], paragraphs: string[], lists: string[], cards: string[], others: string[]): string {
+    const headerBlock = headings.length > 0
+      ? `<div class="section-header">${headings.join('\n')}${paragraphs.join('\n')}</div>`
+      : '';
+
+    const gridContent = cards.length > 0
+      ? `<div class="testimonials-grid">${cards.join('\n')}</div>`
+      : lists.length > 0
+        ? `<div class="testimonials-grid">${lists.join('\n')}</div>`
+        : '';
+
+    return `<!-- wp:group {"className":"${classes}"} -->
+<div class="wp-block-group ${classes}">
+<div class="section-container">
+${headerBlock}
+${gridContent}
+${others.join('\n')}
+</div>
+</div>
+<!-- /wp:group -->`;
+  }
+
+  private compileTeamSection(classes: string, headings: string[], paragraphs: string[], teamMembers: string[], others: string[]): string {
+    const headerBlock = headings.length > 0 || paragraphs.length > 0
+      ? `<div class="section-header">${headings.join('\n')}${paragraphs.join('\n')}</div>`
+      : '';
+
+    return `<!-- wp:group {"className":"${classes}"} -->
+<div class="wp-block-group ${classes}">
+<div class="section-container">
+${headerBlock}
+<div class="team-grid">${teamMembers.join('\n')}</div>
+${others.join('\n')}
+</div>
+</div>
+<!-- /wp:group -->`;
+  }
+
+  private compileStatsSection(classes: string, headings: string[], stats: string[], others: string[]): string {
+    return `<!-- wp:group {"className":"${classes}"} -->
+<div class="wp-block-group ${classes}">
+<div class="section-container">
+${headings.join('\n')}
+<div class="stats-grid">${stats.join('\n')}</div>
+${others.join('\n')}
+</div>
+</div>
+<!-- /wp:group -->`;
+  }
+
+  private compileTimelineSection(classes: string, headings: string[], paragraphs: string[], timelineItems: string[], others: string[]): string {
+    const headerBlock = headings.length > 0 || paragraphs.length > 0
+      ? `<div class="section-header">${headings.join('\n')}${paragraphs.join('\n')}</div>`
+      : '';
+
+    return `<!-- wp:group {"className":"${classes}"} -->
+<div class="wp-block-group ${classes}">
+<div class="section-container">
+${headerBlock}
+<div class="timeline">${timelineItems.join('\n')}</div>
+${others.join('\n')}
+</div>
+</div>
+<!-- /wp:group -->`;
+  }
+
+  private compileCtaSection(classes: string, headings: string[], paragraphs: string[], buttons: string[], others: string[]): string {
+    return `<!-- wp:group {"className":"${classes}"} -->
+<div class="wp-block-group ${classes}">
+<div class="cta-pattern"></div>
+<div class="section-container">
+<div class="cta-content">
+${headings.join('\n')}
+${paragraphs.join('\n')}
+${buttons.length > 0 ? `<div class="cta-buttons">${buttons.join('\n')}</div>` : ''}
+</div>
+${others.join('\n')}
+</div>
+</div>
+<!-- /wp:group -->`;
+  }
+
+  private compileContactSection(classes: string, _type: string, headings: string[], paragraphs: string[], allBlocks: string[], others: string[]): string {
+    // For contact, keep all blocks but wrap in container
+    return `<!-- wp:group {"className":"${classes}"} -->
+<div class="wp-block-group ${classes}">
+<div class="section-container">
+<div class="section-header">${headings.join('\n')}${paragraphs.join('\n')}</div>
+<div class="contact-layout">
+${allBlocks.filter(b => !headings.includes(b) && !paragraphs.includes(b)).join('\n')}
+</div>
+${others.join('\n')}
+</div>
+</div>
+<!-- /wp:group -->`;
+  }
+
+  private compileGallerySection(classes: string, headings: string[], images: string[], others: string[]): string {
+    return `<!-- wp:group {"className":"${classes}"} -->
+<div class="wp-block-group ${classes}">
+<div class="section-container">
+${headings.length > 0 ? `<div class="section-header">${headings.join('\n')}</div>` : ''}
+<div class="gallery-grid">${images.join('\n')}</div>
+${others.join('\n')}
+</div>
+</div>
+<!-- /wp:group -->`;
+  }
+
+  private compilePricingSection(classes: string, headings: string[], paragraphs: string[], cards: string[], others: string[]): string {
+    const headerBlock = headings.length > 0 || paragraphs.length > 0
+      ? `<div class="section-header">${headings.join('\n')}${paragraphs.join('\n')}</div>`
+      : '';
+
+    return `<!-- wp:group {"className":"${classes}"} -->
+<div class="wp-block-group ${classes}">
+<div class="section-container">
+${headerBlock}
+<div class="pricing-grid">${cards.join('\n')}</div>
+${others.join('\n')}
+</div>
+</div>
 <!-- /wp:group -->`;
   }
 

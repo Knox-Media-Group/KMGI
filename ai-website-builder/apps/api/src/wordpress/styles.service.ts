@@ -237,10 +237,51 @@ a:hover {
 .wp-block-group {
   padding: var(--space-xl) var(--space-md);
   position: relative;
+  overflow: hidden;
+}
+
+.section-container {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+  z-index: 2;
+  width: 100%;
 }
 
 .wp-block-group > * {
   max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Section Header - Premium centered heading group */
+.section-header {
+  text-align: center;
+  max-width: 750px;
+  margin: 0 auto var(--space-lg);
+  position: relative;
+}
+
+.section-header::after {
+  content: '';
+  display: block;
+  width: 60px;
+  height: 4px;
+  background: var(--gradient);
+  border-radius: 2px;
+  margin: var(--space-md) auto 0;
+}
+
+.section-header h2,
+.section-header h3 {
+  margin-bottom: var(--space-xs);
+}
+
+.section-header p {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  max-width: 600px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -352,86 +393,182 @@ a:hover {
    HERO SECTION
    ================================================================= */
 .section-hero {
-  min-height: 90vh;
+  min-height: 100vh;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  background: linear-gradient(135deg, ${accentLight} 0%, rgba(${accentRGB}, 0.2) 50%, var(--background) 100%);
+  background: var(--background);
   position: relative;
   overflow: hidden;
   padding: var(--space-2xl) var(--space-md);
   padding-top: calc(var(--space-2xl) + 80px);
 }
 
+/* Animated gradient background orbs */
 .section-hero::before {
   content: '';
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(ellipse at center, rgba(${accentRGB}, 0.15) 0%, transparent 60%);
-  animation: hero-pulse 20s ease-in-out infinite;
+  width: 600px;
+  height: 600px;
+  top: -200px;
+  right: -100px;
+  background: radial-gradient(circle, rgba(${accentRGB}, 0.25) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: heroOrb1 15s ease-in-out infinite;
+  z-index: 0;
 }
 
 .section-hero::after {
   content: '';
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 200px;
-  background: linear-gradient(to top, var(--background), transparent);
+  width: 500px;
+  height: 500px;
+  bottom: -150px;
+  left: -100px;
+  background: radial-gradient(circle, rgba(${accentRGB}, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: heroOrb2 20s ease-in-out infinite;
+  z-index: 0;
 }
 
-@keyframes hero-pulse {
-  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.5; }
-  50% { transform: scale(1.2) rotate(5deg); opacity: 0.8; }
+@keyframes heroOrb1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-60px, 80px) scale(1.1); }
+  66% { transform: translate(40px, -40px) scale(0.95); }
+}
+
+@keyframes heroOrb2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(80px, -60px) scale(1.15); }
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(${accentRGB}, 0.04) 0%, transparent 50%, rgba(${accentRGB}, 0.06) 100%);
+  z-index: 1;
+}
+
+.section-hero .section-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xl);
+  position: relative;
+  z-index: 3;
+}
+
+.hero-content {
+  flex: 1;
+  text-align: left;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  background: var(--accent-subtle);
+  border: 1px solid rgba(${accentRGB}, 0.2);
+  border-radius: 100px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--accent-color);
+  margin-bottom: var(--space-md);
+  animation: slideInUp 0.6s ease-out 0.1s both;
 }
 
 .section-hero h1 {
-  font-size: clamp(3rem, 7vw, 5rem);
-  max-width: 950px;
+  font-size: clamp(2.75rem, 6vw, 4.5rem);
+  max-width: 700px;
   margin-bottom: 1.5rem;
   position: relative;
-  z-index: 1;
-  background: linear-gradient(135deg, var(--text-primary) 30%, var(--accent-color) 100%);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, var(--text-primary) 40%, var(--accent-color) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: slideInUp 0.8s ease-out;
+  animation: slideInUp 0.6s ease-out 0.2s both;
 }
 
 .section-hero .lead,
 .section-hero p:not(.has-small-font-size) {
-  font-size: clamp(1.125rem, 2vw, 1.5rem);
-  max-width: 700px;
-  margin: 0 auto 2.5rem;
+  font-size: clamp(1.1rem, 1.8vw, 1.35rem);
+  max-width: 550px;
+  margin: 0 0 2rem;
   color: var(--text-secondary);
-  position: relative;
-  z-index: 1;
-  animation: slideInUp 0.8s ease-out 0.2s both;
+  line-height: 1.8;
+  animation: slideInUp 0.6s ease-out 0.3s both;
 }
 
-.section-hero .wp-block-button {
-  position: relative;
-  z-index: 1;
-  animation: slideInUp 0.8s ease-out 0.4s both;
+.hero-buttons {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  animation: slideInUp 0.6s ease-out 0.4s both;
 }
 
-.section-hero .wp-block-image {
+.hero-buttons .wp-block-button {
+  margin: 0;
+}
+
+.hero-visual {
+  flex: 1;
+  position: relative;
+  animation: slideInUp 0.8s ease-out 0.3s both;
+}
+
+.hero-visual .wp-block-image {
+  position: relative;
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
+}
+
+.hero-visual .wp-block-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: transform 0.6s ease;
+}
+
+.hero-visual .wp-block-image:hover img {
+  transform: scale(1.03);
+}
+
+/* Hero background image (first image = background) */
+.section-hero > .wp-block-image {
   position: absolute;
   inset: 0;
   z-index: 0;
-  opacity: 0.1;
+  opacity: 0.08;
 }
 
-.section-hero .wp-block-image img {
+.section-hero > .wp-block-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+@media (max-width: 968px) {
+  .section-hero .section-container {
+    flex-direction: column;
+    text-align: center;
+  }
+  .hero-content {
+    text-align: center;
+  }
+  .hero-content h1,
+  .hero-content p {
+    max-width: 100%;
+  }
+  .hero-buttons {
+    justify-content: center;
+  }
+  .hero-badge {
+    margin-left: auto;
+    margin-right: auto;
+  }
 }
 
 /* =================================================================
@@ -440,11 +577,32 @@ a:hover {
 .section-features {
   background: var(--surface);
   padding: var(--space-xl) var(--space-md);
+  position: relative;
 }
 
-.section-features h2 {
-  text-align: center;
-  margin-bottom: var(--space-lg);
+.section-features::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--space-md);
+}
+
+.features-grid .wp-block-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-md);
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
 .section-features .wp-block-list {
@@ -456,54 +614,97 @@ a:hover {
   margin: 0;
 }
 
-.section-features .wp-block-list li {
+.section-features .wp-block-list li,
+.features-grid .wp-block-list li {
   background: var(--surface-elevated);
-  padding: var(--space-md);
+  padding: var(--space-lg) var(--space-md);
   border-radius: var(--border-radius-lg);
   text-align: center;
   transition: all var(--transition-normal);
   border: 1px solid var(--border-color);
+  position: relative;
+  overflow: hidden;
 }
 
-.section-features .wp-block-list li:hover {
+.section-features .wp-block-list li::after,
+.features-grid .wp-block-list li::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--gradient);
+  transform: scaleX(0);
+  transition: transform var(--transition-normal);
+}
+
+.section-features .wp-block-list li:hover,
+.features-grid .wp-block-list li:hover {
   transform: translateY(-8px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+  border-color: rgba(${accentRGB}, 0.2);
 }
 
-.section-features .wp-block-list li::before {
+.section-features .wp-block-list li:hover::after,
+.features-grid .wp-block-list li:hover::after {
+  transform: scaleX(1);
+}
+
+.section-features .wp-block-list li::before,
+.features-grid .wp-block-list li::before {
   content: '';
   display: block;
-  width: 60px;
-  height: 60px;
+  width: 64px;
+  height: 64px;
   margin: 0 auto var(--space-sm);
-  background: var(--gradient);
+  background: linear-gradient(135deg, rgba(${accentRGB}, 0.1), rgba(${accentRGB}, 0.2));
   border-radius: 16px;
-  opacity: 0.15;
+  border: 1px solid rgba(${accentRGB}, 0.15);
 }
 
-.section-features .wp-block-list li strong {
+.section-features .wp-block-list li strong,
+.features-grid .wp-block-list li strong {
   display: block;
   font-size: 1.25rem;
   margin-bottom: var(--space-xs);
   color: var(--text-primary);
+  font-weight: var(--heading-weight);
 }
 
 /* =================================================================
    SERVICES SECTION
    ================================================================= */
 .section-services {
-  background: var(--gradient-subtle);
+  background: var(--background);
   padding: var(--space-xl) var(--space-md);
+  position: relative;
 }
 
-.section-services h2 {
-  text-align: center;
-  margin-bottom: var(--space-xs);
+.section-services::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(${accentRGB}, 0.06) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
 }
 
-.section-services h2 + p {
-  text-align: center;
-  margin-bottom: var(--space-lg);
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-md);
+}
+
+.services-grid .wp-block-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-md);
+  list-style: none;
+  padding: 0;
 }
 
 .section-services .wp-block-list {
@@ -514,18 +715,20 @@ a:hover {
   padding: 0;
 }
 
-.section-services .wp-block-list li {
+.section-services .wp-block-list li,
+.services-grid .wp-block-list li {
   background: var(--surface-elevated);
   padding: var(--space-lg);
   border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
   transition: all var(--transition-normal);
   border: 1px solid var(--border-color);
   position: relative;
   overflow: hidden;
 }
 
-.section-services .wp-block-list li::before {
+.section-services .wp-block-list li::before,
+.services-grid .wp-block-list li::before {
   content: '';
   position: absolute;
   top: 0;
@@ -538,18 +741,41 @@ a:hover {
   transition: transform var(--transition-normal);
 }
 
-.section-services .wp-block-list li:hover {
-  transform: translateY(-8px);
-  box-shadow: var(--shadow-lg);
+.section-services .wp-block-list li::after,
+.services-grid .wp-block-list li::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(${accentRGB}, 0.04) 0%, transparent 70%);
+  border-radius: 50%;
+  transition: all 0.5s ease;
+  opacity: 0;
 }
 
-.section-services .wp-block-list li:hover::before {
+.section-services .wp-block-list li:hover,
+.services-grid .wp-block-list li:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+  border-color: rgba(${accentRGB}, 0.15);
+}
+
+.section-services .wp-block-list li:hover::before,
+.services-grid .wp-block-list li:hover::before {
   transform: scaleX(1);
 }
 
-.section-services .wp-block-list li strong {
+.section-services .wp-block-list li:hover::after,
+.services-grid .wp-block-list li:hover::after {
+  opacity: 1;
+}
+
+.section-services .wp-block-list li strong,
+.services-grid .wp-block-list li strong {
   display: block;
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   margin-bottom: var(--space-sm);
   color: var(--text-primary);
   font-weight: var(--heading-weight);
@@ -559,64 +785,101 @@ a:hover {
    TESTIMONIALS SECTION
    ================================================================= */
 .section-testimonials {
-  background: var(--background);
+  background: var(--surface);
   padding: var(--space-xl) var(--space-md);
+  position: relative;
 }
 
-.section-testimonials h2 {
-  text-align: center;
-  margin-bottom: var(--space-lg);
+.section-testimonials::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-color), transparent);
 }
 
-.section-testimonials .wp-block-list {
+.testimonials-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: var(--space-md);
+}
+
+.testimonials-grid .wp-block-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
   gap: var(--space-md);
   list-style: none;
   padding: 0;
 }
 
-.section-testimonials .wp-block-list li {
-  background: var(--surface);
+.section-testimonials .wp-block-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: var(--space-md);
+  list-style: none;
+  padding: 0;
+}
+
+.section-testimonials .wp-block-list li,
+.testimonials-grid .wp-block-list li {
+  background: var(--surface-elevated);
   padding: var(--space-lg);
   border-radius: var(--border-radius-lg);
   position: relative;
   border: 1px solid var(--border-color);
+  transition: all var(--transition-normal);
 }
 
-.section-testimonials .wp-block-list li::before {
+.section-testimonials .wp-block-list li:hover,
+.testimonials-grid .wp-block-list li:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+}
+
+.section-testimonials .wp-block-list li::before,
+.testimonials-grid .wp-block-list li::before {
   content: '"';
-  font-size: 6rem;
-  color: var(--accent-subtle);
+  font-size: 5rem;
+  color: rgba(${accentRGB}, 0.15);
   position: absolute;
-  top: var(--space-sm);
+  top: var(--space-xs);
   left: var(--space-md);
   line-height: 1;
   font-family: Georgia, serif;
+  font-weight: 700;
 }
 
-.section-testimonials .wp-block-list li p {
+.section-testimonials .wp-block-list li p,
+.testimonials-grid .wp-block-list li p {
   position: relative;
   z-index: 1;
   font-style: italic;
   margin-bottom: var(--space-md);
 }
 
-.section-testimonials .wp-block-list li strong {
+.section-testimonials .wp-block-list li strong,
+.testimonials-grid .wp-block-list li strong {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  color: var(--accent-color);
+  color: var(--text-primary);
   font-weight: 600;
+  font-size: 0.95rem;
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-color);
 }
 
-.section-testimonials .wp-block-list li strong::before {
+.section-testimonials .wp-block-list li strong::before,
+.testimonials-grid .wp-block-list li strong::before {
   content: '';
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   background: var(--gradient);
   border-radius: 50%;
   flex-shrink: 0;
+  box-shadow: 0 4px 12px var(--accent-glow);
 }
 
 /* =================================================================
@@ -625,10 +888,74 @@ a:hover {
 .section-about {
   background: var(--background);
   padding: var(--space-xl) var(--space-md);
+  position: relative;
 }
 
-.section-about h2,
-.section-about h1 {
+.about-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-xl);
+  align-items: center;
+}
+
+.about-image-col {
+  position: relative;
+}
+
+.about-image-wrapper {
+  position: relative;
+}
+
+.about-image-wrapper .wp-block-image {
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.12);
+  position: relative;
+  z-index: 2;
+}
+
+.about-image-wrapper .wp-block-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: transform 0.5s ease;
+}
+
+.about-image-wrapper:hover .wp-block-image img {
+  transform: scale(1.03);
+}
+
+.about-image-accent {
+  position: absolute;
+  bottom: -20px;
+  right: -20px;
+  width: 60%;
+  height: 60%;
+  background: var(--gradient);
+  border-radius: var(--border-radius-lg);
+  opacity: 0.15;
+  z-index: 1;
+}
+
+.about-content-col h2,
+.about-content-col h1 {
+  text-align: left;
+}
+
+.about-content-col p {
+  margin-bottom: 1.25rem;
+}
+
+.about-buttons {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-top: var(--space-md);
+}
+
+/* Fallback for about without image */
+.section-about > .section-container > .section-header h2,
+.section-about > .section-container > .section-header h1 {
   text-align: center;
 }
 
@@ -638,7 +965,7 @@ a:hover {
   margin: 0 auto var(--space-lg);
 }
 
-.section-about .wp-block-image {
+.section-about > .section-container > .wp-block-image {
   max-width: 900px;
   margin: var(--space-lg) auto;
   border-radius: var(--border-radius-lg);
@@ -646,15 +973,21 @@ a:hover {
   box-shadow: var(--shadow-lg);
 }
 
-.section-about .wp-block-image img {
-  width: 100%;
-  height: auto;
-  display: block;
-  transition: transform var(--transition-slow);
-}
-
-.section-about .wp-block-image:hover img {
-  transform: scale(1.03);
+@media (max-width: 868px) {
+  .about-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
+  .about-content-col h2,
+  .about-content-col h1 {
+    text-align: center;
+  }
+  .about-content-col p {
+    text-align: center;
+  }
+  .about-buttons {
+    justify-content: center;
+  }
 }
 
 /* =================================================================
@@ -837,6 +1170,19 @@ a:hover {
 .section-stats {
   background: var(--gradient-dark);
   padding: var(--space-xl) var(--space-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.section-stats::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -25%;
+  width: 150%;
+  height: 200%;
+  background: radial-gradient(ellipse at center, rgba(${accentRGB}, 0.15) 0%, transparent 50%);
+  pointer-events: none;
 }
 
 .section-stats .stats-grid {
@@ -844,25 +1190,43 @@ a:hover {
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: var(--space-md);
   text-align: center;
+  position: relative;
+  z-index: 2;
 }
 
 .section-stats .stat-item {
-  padding: var(--space-md);
+  padding: var(--space-lg) var(--space-md);
+  position: relative;
+}
+
+.section-stats .stat-item + .stat-item::before {
+  content: '';
+  position: absolute;
+  top: 20%;
+  left: 0;
+  height: 60%;
+  width: 1px;
+  background: rgba(255,255,255,0.15);
 }
 
 .section-stats .stat-value {
-  font-size: clamp(3rem, 6vw, 4.5rem);
+  font-size: clamp(2.75rem, 5vw, 4rem);
   font-weight: 800;
   color: white;
   line-height: 1;
   margin-bottom: var(--space-xs);
+  background: linear-gradient(135deg, white 30%, rgba(${accentRGB}, 0.7) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .section-stats .stat-label {
-  font-size: 1rem;
-  color: rgba(255,255,255,0.7);
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.6);
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
+  font-weight: 500;
 }
 
 /* =================================================================
@@ -1148,17 +1512,24 @@ a:hover {
   overflow: hidden;
 }
 
-.section-cta::before {
-  content: '';
+.cta-pattern {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at center, rgba(${accentRGB}, 0.3) 0%, transparent 70%);
+  background: radial-gradient(ellipse at 30% 50%, rgba(${accentRGB}, 0.25) 0%, transparent 50%),
+              radial-gradient(ellipse at 70% 50%, rgba(${accentRGB}, 0.15) 0%, transparent 50%);
+  z-index: 1;
+}
+
+.cta-content {
+  position: relative;
+  z-index: 2;
+  max-width: 700px;
+  margin: 0 auto;
 }
 
 .section-cta h2 {
   color: white;
-  position: relative;
-  z-index: 1;
+  font-size: clamp(2rem, 4vw, 3rem);
 }
 
 .section-cta p,
@@ -1166,22 +1537,47 @@ a:hover {
   color: rgba(255,255,255,0.85);
   max-width: 600px;
   margin: 0 auto var(--space-md);
-  position: relative;
-  z-index: 1;
+  font-size: 1.2rem;
 }
 
-.section-cta .wp-block-button {
-  position: relative;
-  z-index: 1;
+.cta-buttons {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-top: var(--space-md);
 }
 
 .section-cta .wp-block-button__link {
   background: white;
   color: var(--accent-color) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
 }
 
 .section-cta .wp-block-button__link:hover {
   background: var(--surface);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+}
+
+/* =================================================================
+   CONTACT LAYOUT
+   ================================================================= */
+.contact-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-lg);
+  align-items: start;
+}
+
+.contact-layout form {
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  .contact-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* =================================================================
@@ -1467,7 +1863,7 @@ a:hover {
 @keyframes slideInUp {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(40px);
   }
   to {
     opacity: 1;
@@ -1478,7 +1874,18 @@ a:hover {
 @keyframes slideInLeft {
   from {
     opacity: 0;
-    transform: translateX(-30px);
+    transform: translateX(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
   }
   to {
     opacity: 1;
@@ -1514,13 +1921,36 @@ a:hover {
   transform: translateY(0);
 }
 
-/* Staggered animations */
-.wp-block-group > *:nth-child(1) { animation: slideInUp 0.6s ease-out 0.1s both; }
-.wp-block-group > *:nth-child(2) { animation: slideInUp 0.6s ease-out 0.2s both; }
-.wp-block-group > *:nth-child(3) { animation: slideInUp 0.6s ease-out 0.3s both; }
-.wp-block-group > *:nth-child(4) { animation: slideInUp 0.6s ease-out 0.4s both; }
-.wp-block-group > *:nth-child(5) { animation: slideInUp 0.6s ease-out 0.5s both; }
-.wp-block-group > *:nth-child(6) { animation: slideInUp 0.6s ease-out 0.6s both; }
+/* Staggered animations for section content */
+.section-header { animation: slideInUp 0.6s ease-out 0.1s both; }
+
+.features-grid > *:nth-child(1),
+.services-grid > *:nth-child(1),
+.testimonials-grid > *:nth-child(1),
+.pricing-grid > *:nth-child(1) { animation: slideInUp 0.5s ease-out 0.2s both; }
+
+.features-grid > *:nth-child(2),
+.services-grid > *:nth-child(2),
+.testimonials-grid > *:nth-child(2),
+.pricing-grid > *:nth-child(2) { animation: slideInUp 0.5s ease-out 0.3s both; }
+
+.features-grid > *:nth-child(3),
+.services-grid > *:nth-child(3),
+.testimonials-grid > *:nth-child(3),
+.pricing-grid > *:nth-child(3) { animation: slideInUp 0.5s ease-out 0.4s both; }
+
+.about-image-col { animation: slideInLeft 0.7s ease-out 0.2s both; }
+.about-content-col { animation: slideInRight 0.7s ease-out 0.3s both; }
+
+.team-grid > *:nth-child(1) { animation: scaleIn 0.5s ease-out 0.2s both; }
+.team-grid > *:nth-child(2) { animation: scaleIn 0.5s ease-out 0.3s both; }
+.team-grid > *:nth-child(3) { animation: scaleIn 0.5s ease-out 0.4s both; }
+.team-grid > *:nth-child(4) { animation: scaleIn 0.5s ease-out 0.5s both; }
+
+.stats-grid > *:nth-child(1) { animation: slideInUp 0.5s ease-out 0.1s both; }
+.stats-grid > *:nth-child(2) { animation: slideInUp 0.5s ease-out 0.2s both; }
+.stats-grid > *:nth-child(3) { animation: slideInUp 0.5s ease-out 0.3s both; }
+.stats-grid > *:nth-child(4) { animation: slideInUp 0.5s ease-out 0.4s both; }
 
 /* =================================================================
    RESPONSIVE DESIGN
@@ -1539,7 +1969,7 @@ a:hover {
   }
 
   .section-hero {
-    min-height: 80vh;
+    min-height: 85vh;
     padding-top: calc(var(--space-xl) + 60px);
   }
 
@@ -1547,9 +1977,38 @@ a:hover {
     font-size: clamp(2rem, 8vw, 3rem);
   }
 
+  .section-hero .section-container {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .hero-content {
+    text-align: center;
+  }
+
+  .hero-content p,
+  .hero-content h1 {
+    max-width: 100%;
+  }
+
+  .hero-buttons {
+    justify-content: center;
+  }
+
+  .hero-badge {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
   .section-services .wp-block-list,
+  .services-grid .wp-block-list,
   .section-features .wp-block-list,
-  .section-testimonials .wp-block-list {
+  .features-grid .wp-block-list,
+  .section-testimonials .wp-block-list,
+  .testimonials-grid .wp-block-list,
+  .services-grid,
+  .features-grid,
+  .testimonials-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1560,6 +2019,15 @@ a:hover {
   .section-footer .footer-content {
     grid-template-columns: 1fr;
     text-align: center;
+  }
+
+  .about-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+  }
+
+  .contact-layout {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -1576,6 +2044,10 @@ a:hover {
 
   .section-stats .stat-value {
     font-size: 3rem;
+  }
+
+  .section-header::after {
+    margin-top: var(--space-sm);
   }
 }
 
