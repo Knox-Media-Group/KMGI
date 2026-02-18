@@ -11,6 +11,7 @@ import { AiModule } from './ai/ai.module';
 import { PerformanceModule } from './performance/performance.module';
 import { ApiModule } from './api/api.module';
 import { HostingModule } from './hosting/hosting.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -31,6 +32,7 @@ import { HealthController } from './health.controller';
     PerformanceModule,
     ApiModule,
     HostingModule,
+    AnalyticsModule,
   ],
 })
 export class AppModule {}

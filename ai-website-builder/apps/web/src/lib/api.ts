@@ -395,3 +395,108 @@ export const hostingApi = {
       token,
     }),
 };
+
+// Analytics API
+export interface VisitorStats {
+  total: number;
+  unique: number;
+  returning: number;
+  change: number;
+}
+
+export interface PageViewStats {
+  total: number;
+  change: number;
+  averagePerVisitor: number;
+}
+
+export interface SessionStats {
+  total: number;
+  averageDuration: number;
+  bounceRate: number;
+  pagesPerSession: number;
+}
+
+export interface TopPage {
+  path: string;
+  title: string;
+  views: number;
+  uniqueViews: number;
+  avgTimeOnPage: number;
+  bounceRate: number;
+}
+
+export interface TrafficSource {
+  source: string;
+  medium: string;
+  visitors: number;
+  percentage: number;
+}
+
+export interface DeviceBreakdown {
+  device: 'desktop' | 'mobile' | 'tablet';
+  visitors: number;
+  percentage: number;
+}
+
+export interface TimeSeriesDataPoint {
+  date: string;
+  visitors: number;
+  pageViews: number;
+}
+
+export interface ConversionGoal {
+  id: string;
+  name: string;
+  type: 'pageview' | 'event' | 'form_submit' | 'click';
+  target: string;
+  completions: number;
+  conversionRate: number;
+}
+
+export interface AnalyticsDashboard {
+  siteId: string;
+  period: string;
+  visitors: VisitorStats;
+  pageViews: PageViewStats;
+  sessions: SessionStats;
+  topPages: TopPage[];
+  trafficSources: TrafficSource[];
+  devices: DeviceBreakdown[];
+  browsers: { browser: string; visitors: number; percentage: number }[];
+  countries: { country: string; countryCode: string; visitors: number; percentage: number }[];
+  timeSeries: TimeSeriesDataPoint[];
+  goals: ConversionGoal[];
+  lastUpdated: string;
+}
+
+export interface RealTimeData {
+  activeVisitors: number;
+  activePages: { path: string; visitors: number }[];
+  recentEvents: { type: string; path: string; timestamp: string }[];
+}
+
+export const analyticsApi = {
+  getDashboard: (siteId: string, period: '7d' | '30d' | '90d' | '12m', token: string) =>
+    api<AnalyticsDashboard>(`/analytics/${siteId}/dashboard?period=${period}`, { token }),
+
+  getRealTime: (siteId: string, token: string) =>
+    api<RealTimeData>(`/analytics/${siteId}/realtime`, { token }),
+
+  getPageAnalytics: (siteId: string, path: string, period: string, token: string) =>
+    api<TopPage>(`/analytics/${siteId}/page?path=${encodeURIComponent(path)}&period=${period}`, { token }),
+
+  trackEvent: (siteId: string, event: { name: string; category: string; value?: number }, token: string) =>
+    api<{ success: boolean }>(`/analytics/${siteId}/event`, {
+      method: 'POST',
+      body: event,
+      token,
+    }),
+
+  createGoal: (siteId: string, goal: { name: string; type: string; target: string }, token: string) =>
+    api<ConversionGoal>(`/analytics/${siteId}/goals`, {
+      method: 'POST',
+      body: goal,
+      token,
+    }),
+};

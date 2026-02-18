@@ -1180,3 +1180,385 @@ export function createDefaultFooter(settings: SiteSettings): SiteFooter {
     showBackToTop: true,
   };
 }
+
+// ============================================
+// WEBSITE TEMPLATE LIBRARY
+// ============================================
+
+export interface WebsiteTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: TemplateCategory;
+  industry: string;
+  thumbnail: string;
+  previewUrl?: string;
+  features: string[];
+  pages: string[];
+  stylePreset: StylePreset;
+  accentColor: string;
+  popular?: boolean;
+  new?: boolean;
+  premium?: boolean;
+}
+
+export type TemplateCategory =
+  | 'business'
+  | 'ecommerce'
+  | 'portfolio'
+  | 'blog'
+  | 'landing'
+  | 'restaurant'
+  | 'healthcare'
+  | 'realestate'
+  | 'fitness'
+  | 'beauty'
+  | 'technology'
+  | 'education'
+  | 'nonprofit';
+
+export const WEBSITE_TEMPLATES: WebsiteTemplate[] = [
+  // Business Templates
+  {
+    id: 'business-modern',
+    name: 'Modern Business',
+    description: 'Clean, professional template perfect for consulting firms, agencies, and corporate businesses.',
+    category: 'business',
+    industry: 'Professional Services',
+    thumbnail: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&h=400&fit=crop',
+    features: ['Hero with CTA', 'Services Grid', 'Team Section', 'Testimonials', 'Contact Form'],
+    pages: ['Home', 'About', 'Services', 'Team', 'Contact'],
+    stylePreset: 'modern',
+    accentColor: '#3b82f6',
+    popular: true,
+  },
+  {
+    id: 'business-classic',
+    name: 'Classic Corporate',
+    description: 'Timeless and elegant design for established businesses and law firms.',
+    category: 'business',
+    industry: 'Legal',
+    thumbnail: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&h=400&fit=crop',
+    features: ['Professional Header', 'Practice Areas', 'Attorney Profiles', 'Case Results', 'Blog'],
+    pages: ['Home', 'Practice Areas', 'Attorneys', 'Results', 'Blog', 'Contact'],
+    stylePreset: 'classic',
+    accentColor: '#1e3a5f',
+  },
+  {
+    id: 'startup-bold',
+    name: 'Startup Bold',
+    description: 'Dynamic and energetic template for startups and tech companies.',
+    category: 'technology',
+    industry: 'Technology',
+    thumbnail: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=600&h=400&fit=crop',
+    features: ['Animated Hero', 'Feature Highlights', 'Pricing Table', 'Integrations', 'FAQ'],
+    pages: ['Home', 'Features', 'Pricing', 'Integrations', 'FAQ', 'Contact'],
+    stylePreset: 'bold',
+    accentColor: '#8b5cf6',
+    popular: true,
+    new: true,
+  },
+
+  // Restaurant Templates
+  {
+    id: 'restaurant-elegant',
+    name: 'Fine Dining',
+    description: 'Sophisticated template for upscale restaurants and fine dining establishments.',
+    category: 'restaurant',
+    industry: 'Restaurant',
+    thumbnail: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&h=400&fit=crop',
+    features: ['Full-screen Hero', 'Menu Display', 'Reservation Form', 'Gallery', 'Events'],
+    pages: ['Home', 'Menu', 'Reservations', 'Gallery', 'Events', 'Contact'],
+    stylePreset: 'classic',
+    accentColor: '#b8860b',
+    popular: true,
+  },
+  {
+    id: 'restaurant-casual',
+    name: 'Casual Eatery',
+    description: 'Friendly and inviting template for cafes, bistros, and casual restaurants.',
+    category: 'restaurant',
+    industry: 'Restaurant',
+    thumbnail: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&h=400&fit=crop',
+    features: ['Photo Gallery', 'Menu Cards', 'Online Ordering', 'Reviews', 'Location Map'],
+    pages: ['Home', 'Menu', 'Order Online', 'Reviews', 'Contact'],
+    stylePreset: 'playful',
+    accentColor: '#ef4444',
+  },
+
+  // Healthcare Templates
+  {
+    id: 'healthcare-clinic',
+    name: 'Medical Clinic',
+    description: 'Professional and trustworthy template for medical practices and clinics.',
+    category: 'healthcare',
+    industry: 'Healthcare',
+    thumbnail: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=600&h=400&fit=crop',
+    features: ['Services List', 'Doctor Profiles', 'Appointment Booking', 'Patient Portal', 'Insurance Info'],
+    pages: ['Home', 'Services', 'Our Doctors', 'Appointments', 'Patient Info', 'Contact'],
+    stylePreset: 'professional',
+    accentColor: '#0ea5e9',
+    popular: true,
+  },
+  {
+    id: 'healthcare-dental',
+    name: 'Dental Practice',
+    description: 'Bright and welcoming template for dental offices and orthodontists.',
+    category: 'healthcare',
+    industry: 'Healthcare',
+    thumbnail: 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=600&h=400&fit=crop',
+    features: ['Service Cards', 'Before/After Gallery', 'Meet the Team', 'New Patient Forms', 'Insurance'],
+    pages: ['Home', 'Services', 'Gallery', 'Team', 'New Patients', 'Contact'],
+    stylePreset: 'modern',
+    accentColor: '#14b8a6',
+  },
+
+  // Real Estate Templates
+  {
+    id: 'realestate-luxury',
+    name: 'Luxury Real Estate',
+    description: 'High-end template for luxury real estate agents and brokerages.',
+    category: 'realestate',
+    industry: 'Real Estate',
+    thumbnail: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600&h=400&fit=crop',
+    features: ['Property Listings', 'Virtual Tours', 'Agent Bio', 'Market Reports', 'Mortgage Calculator'],
+    pages: ['Home', 'Properties', 'Sold', 'About', 'Market Reports', 'Contact'],
+    stylePreset: 'classic',
+    accentColor: '#0f172a',
+    popular: true,
+  },
+  {
+    id: 'realestate-modern',
+    name: 'Modern Realtor',
+    description: 'Contemporary template for modern real estate professionals.',
+    category: 'realestate',
+    industry: 'Real Estate',
+    thumbnail: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&h=400&fit=crop',
+    features: ['IDX Integration Ready', 'Property Search', 'Neighborhood Guides', 'Blog', 'Testimonials'],
+    pages: ['Home', 'Listings', 'Neighborhoods', 'Blog', 'About', 'Contact'],
+    stylePreset: 'modern',
+    accentColor: '#6366f1',
+    new: true,
+  },
+
+  // Fitness Templates
+  {
+    id: 'fitness-gym',
+    name: 'Fitness Center',
+    description: 'Energetic template for gyms, fitness centers, and sports facilities.',
+    category: 'fitness',
+    industry: 'Fitness',
+    thumbnail: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&h=400&fit=crop',
+    features: ['Class Schedule', 'Membership Plans', 'Trainer Profiles', 'Facility Tour', 'Online Signup'],
+    pages: ['Home', 'Classes', 'Memberships', 'Trainers', 'Facilities', 'Join'],
+    stylePreset: 'bold',
+    accentColor: '#ef4444',
+    popular: true,
+  },
+  {
+    id: 'fitness-yoga',
+    name: 'Yoga Studio',
+    description: 'Peaceful and calming template for yoga studios and wellness centers.',
+    category: 'fitness',
+    industry: 'Fitness',
+    thumbnail: 'https://images.unsplash.com/photo-1545205597-3d9d02c29597?w=600&h=400&fit=crop',
+    features: ['Class Types', 'Schedule', 'Instructor Bios', 'Workshop Events', 'Online Booking'],
+    pages: ['Home', 'Classes', 'Schedule', 'Instructors', 'Workshops', 'Book'],
+    stylePreset: 'minimal',
+    accentColor: '#a855f7',
+  },
+
+  // Beauty Templates
+  {
+    id: 'beauty-salon',
+    name: 'Hair Salon',
+    description: 'Stylish template for hair salons and beauty parlors.',
+    category: 'beauty',
+    industry: 'Beauty',
+    thumbnail: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=600&h=400&fit=crop',
+    features: ['Service Menu', 'Stylist Profiles', 'Before/After Gallery', 'Online Booking', 'Gift Cards'],
+    pages: ['Home', 'Services', 'Stylists', 'Gallery', 'Book', 'Contact'],
+    stylePreset: 'playful',
+    accentColor: '#ec4899',
+    popular: true,
+  },
+  {
+    id: 'beauty-spa',
+    name: 'Luxury Spa',
+    description: 'Relaxing and luxurious template for spas and wellness retreats.',
+    category: 'beauty',
+    industry: 'Beauty',
+    thumbnail: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=600&h=400&fit=crop',
+    features: ['Treatment Menu', 'Package Deals', 'Ambiance Gallery', 'Gift Certificates', 'Membership'],
+    pages: ['Home', 'Treatments', 'Packages', 'Gallery', 'Gift Cards', 'Contact'],
+    stylePreset: 'minimal',
+    accentColor: '#14b8a6',
+  },
+
+  // E-commerce Templates
+  {
+    id: 'ecommerce-fashion',
+    name: 'Fashion Store',
+    description: 'Trendy template for clothing and fashion e-commerce.',
+    category: 'ecommerce',
+    industry: 'Retail',
+    thumbnail: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=400&fit=crop',
+    features: ['Product Grid', 'Collections', 'Lookbook', 'Shopping Cart', 'Wishlist'],
+    pages: ['Home', 'Shop', 'Collections', 'Lookbook', 'About', 'Contact'],
+    stylePreset: 'modern',
+    accentColor: '#0f172a',
+    popular: true,
+    premium: true,
+  },
+  {
+    id: 'ecommerce-minimal',
+    name: 'Minimal Shop',
+    description: 'Clean and minimal template for boutique online stores.',
+    category: 'ecommerce',
+    industry: 'Retail',
+    thumbnail: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=600&h=400&fit=crop',
+    features: ['Featured Products', 'Categories', 'Quick View', 'Reviews', 'Newsletter'],
+    pages: ['Home', 'Shop', 'Categories', 'About', 'FAQ', 'Contact'],
+    stylePreset: 'minimal',
+    accentColor: '#78716c',
+    new: true,
+  },
+
+  // Portfolio Templates
+  {
+    id: 'portfolio-creative',
+    name: 'Creative Portfolio',
+    description: 'Bold and creative template for designers, artists, and creatives.',
+    category: 'portfolio',
+    industry: 'Creative',
+    thumbnail: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=600&h=400&fit=crop',
+    features: ['Project Gallery', 'Case Studies', 'Skills', 'Client List', 'Resume'],
+    pages: ['Home', 'Portfolio', 'About', 'Services', 'Contact'],
+    stylePreset: 'bold',
+    accentColor: '#f97316',
+    popular: true,
+  },
+  {
+    id: 'portfolio-photography',
+    name: 'Photography',
+    description: 'Image-focused template for photographers and visual artists.',
+    category: 'portfolio',
+    industry: 'Photography',
+    thumbnail: 'https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=600&h=400&fit=crop',
+    features: ['Full-screen Gallery', 'Albums', 'Lightbox', 'Client Galleries', 'Booking'],
+    pages: ['Home', 'Portfolio', 'Albums', 'About', 'Pricing', 'Contact'],
+    stylePreset: 'minimal',
+    accentColor: '#171717',
+  },
+
+  // Landing Pages
+  {
+    id: 'landing-saas',
+    name: 'SaaS Landing',
+    description: 'High-converting landing page for software and SaaS products.',
+    category: 'landing',
+    industry: 'Technology',
+    thumbnail: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=400&fit=crop',
+    features: ['Hero CTA', 'Feature Grid', 'Social Proof', 'Pricing', 'FAQ'],
+    pages: ['Landing Page'],
+    stylePreset: 'modern',
+    accentColor: '#6366f1',
+    popular: true,
+  },
+  {
+    id: 'landing-app',
+    name: 'App Launch',
+    description: 'Eye-catching landing page for mobile app launches.',
+    category: 'landing',
+    industry: 'Technology',
+    thumbnail: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=600&h=400&fit=crop',
+    features: ['App Preview', 'Feature List', 'Screenshots', 'Download Links', 'Reviews'],
+    pages: ['Landing Page'],
+    stylePreset: 'playful',
+    accentColor: '#22c55e',
+    new: true,
+  },
+
+  // Education Templates
+  {
+    id: 'education-school',
+    name: 'Private School',
+    description: 'Professional template for schools and educational institutions.',
+    category: 'education',
+    industry: 'Education',
+    thumbnail: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=600&h=400&fit=crop',
+    features: ['Programs', 'Campus Tour', 'Faculty', 'Admissions', 'Calendar'],
+    pages: ['Home', 'Programs', 'Campus', 'Faculty', 'Admissions', 'Contact'],
+    stylePreset: 'professional',
+    accentColor: '#1e40af',
+  },
+  {
+    id: 'education-online',
+    name: 'Online Courses',
+    description: 'Modern template for online course creators and educators.',
+    category: 'education',
+    industry: 'Education',
+    thumbnail: 'https://images.unsplash.com/photo-1501504905252-473c47e087f8?w=600&h=400&fit=crop',
+    features: ['Course Catalog', 'Instructor Bio', 'Student Reviews', 'Pricing', 'Blog'],
+    pages: ['Home', 'Courses', 'About', 'Testimonials', 'Blog', 'Enroll'],
+    stylePreset: 'modern',
+    accentColor: '#8b5cf6',
+    popular: true,
+  },
+
+  // Nonprofit Templates
+  {
+    id: 'nonprofit-charity',
+    name: 'Charity',
+    description: 'Inspiring template for nonprofits, charities, and NGOs.',
+    category: 'nonprofit',
+    industry: 'Nonprofit',
+    thumbnail: 'https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=600&h=400&fit=crop',
+    features: ['Mission Statement', 'Impact Stats', 'Donation Form', 'Volunteer Signup', 'Events'],
+    pages: ['Home', 'About', 'Our Impact', 'Get Involved', 'Donate', 'Contact'],
+    stylePreset: 'modern',
+    accentColor: '#10b981',
+    popular: true,
+  },
+
+  // Blog Templates
+  {
+    id: 'blog-magazine',
+    name: 'Magazine',
+    description: 'Content-rich template for blogs and online magazines.',
+    category: 'blog',
+    industry: 'Media',
+    thumbnail: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=600&h=400&fit=crop',
+    features: ['Featured Posts', 'Categories', 'Author Pages', 'Newsletter', 'Search'],
+    pages: ['Home', 'Articles', 'Categories', 'Authors', 'About', 'Contact'],
+    stylePreset: 'classic',
+    accentColor: '#dc2626',
+    new: true,
+  },
+];
+
+// Helper function to get templates by category
+export function getTemplatesByCategory(category: TemplateCategory): WebsiteTemplate[] {
+  return WEBSITE_TEMPLATES.filter(t => t.category === category);
+}
+
+// Helper function to get popular templates
+export function getPopularTemplates(): WebsiteTemplate[] {
+  return WEBSITE_TEMPLATES.filter(t => t.popular);
+}
+
+// Helper function to get new templates
+export function getNewTemplates(): WebsiteTemplate[] {
+  return WEBSITE_TEMPLATES.filter(t => t.new);
+}
+
+// Helper function to search templates
+export function searchTemplates(query: string): WebsiteTemplate[] {
+  const lowerQuery = query.toLowerCase();
+  return WEBSITE_TEMPLATES.filter(t =>
+    t.name.toLowerCase().includes(lowerQuery) ||
+    t.description.toLowerCase().includes(lowerQuery) ||
+    t.industry.toLowerCase().includes(lowerQuery) ||
+    t.category.toLowerCase().includes(lowerQuery)
+  );
+}
