@@ -172,9 +172,14 @@ export class AiService {
       ? `\nLocation: ${settings.city}, ${settings.state}`
       : '';
 
+    // Industry-specific guidance for content generation
+    const industryGuidance = this.getIndustryGuidance(settings.industry);
+
     const prompt = `Generate comprehensive website content for a ${settings.industry} business called "${settings.businessName}".${descriptionContext}${locationContext}
 Style: ${settings.stylePreset}
 Primary action: ${settings.primaryCta === 'call' ? 'Call us' : settings.primaryCta === 'book' ? 'Book appointment' : 'Get a quote'}
+
+${industryGuidance}
 
 Use the business description to create highly specific, relevant, and professional content. Generate content that sounds authentic and matches the industry.
 
@@ -294,10 +299,45 @@ Respond ONLY with valid JSON, no markdown or explanation.`;
     }
   }
 
+  private getIndustryGuidance(industry: string): string {
+    const lowerIndustry = industry.toLowerCase();
+
+    if (lowerIndustry.includes('church') || lowerIndustry.includes('religious') || lowerIndustry.includes('faith') || lowerIndustry.includes('ministry')) {
+      return `IMPORTANT: This is a CHURCH/RELIGIOUS organization. Generate warm, welcoming, faith-centered content:
+- Use spiritual language: "community", "faith", "worship", "fellowship", "ministry", "blessing", "grace"
+- Hero headline should be inspiring and inviting (e.g., "A Place to Belong", "Come As You Are", "Growing Together in Faith")
+- Features should highlight: Welcoming Community, Inspiring Worship, Children's Ministry, Small Groups
+- Services should be ministries: Worship Services, Youth Ministry, Children's Programs, Community Outreach, Prayer Ministry
+- Testimonials should reflect spiritual growth and community connection
+- Values should include: Faith, Love, Community, Service, Hope
+- CTA should invite visitors: "Join Us This Sunday", "Visit Us", "Plan Your Visit"
+- Timeline should reflect church milestones, growth, and community impact
+- Team members are pastors, ministers, and ministry leaders`;
+    }
+
+    if (lowerIndustry.includes('nonprofit') || lowerIndustry.includes('charity') || lowerIndustry.includes('foundation')) {
+      return `IMPORTANT: This is a NONPROFIT organization. Generate mission-driven content:
+- Focus on impact, community, and making a difference
+- Use language about helping, serving, and transforming lives
+- Features should highlight impact metrics and community benefits
+- Services should be programs and initiatives
+- CTA should focus on getting involved: "Donate", "Volunteer", "Get Involved"`;
+    }
+
+    return ''; // Default - no special guidance
+  }
+
   private generateFallbackContent(settings: SiteSettings): AIGeneratedContent {
     const industry = settings.industry.toLowerCase();
     const name = settings.businessName;
     const year = settings.foundedYear || '2015';
+
+    // Check if this is a church/religious organization
+    const isChurch = industry.includes('church') || industry.includes('religious') || industry.includes('faith') || industry.includes('ministry');
+
+    if (isChurch) {
+      return this.generateChurchFallbackContent(settings, name, year);
+    }
 
     return {
       home: {
@@ -413,8 +453,132 @@ Respond ONLY with valid JSON, no markdown or explanation.`;
     };
   }
 
+  private generateChurchFallbackContent(settings: SiteSettings, name: string, year: string): AIGeneratedContent {
+    return {
+      home: {
+        heroHeadline: 'A Place to Belong',
+        heroSubheadline: settings.tagline || `Welcome to ${name}. Join our faith community and experience the warmth of belonging.`,
+        features: [
+          { title: 'Welcoming Community', description: 'A place where everyone belongs and is loved unconditionally', icon: 'heart' },
+          { title: 'Inspiring Worship', description: 'Experience powerful worship that lifts your spirit and draws you closer to God', icon: 'star' },
+          { title: 'Children & Youth', description: 'Age-appropriate programs that help young people grow in faith', icon: 'users' },
+          { title: 'Small Groups', description: 'Connect deeply with others through fellowship and Bible study', icon: 'shield' },
+        ],
+        services: [
+          { title: 'Sunday Worship', description: `Join us for inspiring worship services filled with uplifting music, meaningful messages, and warm fellowship. Everyone is welcome at ${name}.` },
+          { title: 'Youth Ministry', description: `Our youth programs create a safe space for teenagers to explore faith, build friendships, and discover their purpose in a fun, engaging environment.` },
+          { title: 'Community Outreach', description: `We're committed to serving our community through various outreach programs, volunteering, and support initiatives that make a real difference.` },
+        ],
+        testimonials: [
+          { name: 'Michael R.', role: 'Church Member', quote: `${name} has become our family's spiritual home. The welcoming community and meaningful worship have transformed our lives. We're grateful to belong here.`, rating: 5 },
+          { name: 'Jennifer L.', role: 'New Visitor', quote: `From the moment we walked through the doors, we felt at home. The genuine warmth and love here is truly special.`, rating: 5 },
+        ],
+        ctaHeadline: 'Join Us This Sunday',
+        ctaSubtext: `We'd love to meet you! Come experience the warmth of our community and discover what ${name} has to offer.`,
+      },
+      about: {
+        headline: `About ${name}`,
+        story: settings.description || `${name} was founded with a vision to create a loving community where people can grow in faith, find support, and make a difference. What began as a small gathering of believers has grown into a vibrant church family committed to spreading love and hope. We believe everyone has a place here, and we're dedicated to helping each person discover their purpose and potential in Christ.`,
+        mission: `Our mission is to love God, love people, and make disciples. We strive to create an environment where everyone can experience God's grace and grow in their spiritual journey.`,
+        vision: `We envision a church that transforms lives and communities through the power of faith, love, and service, reaching people with the message of hope.`,
+        values: [
+          { title: 'Faith', description: 'We believe in the transformative power of faith in Jesus Christ' },
+          { title: 'Love', description: 'We show unconditional love to all people, reflecting God\'s love for us' },
+          { title: 'Community', description: 'We foster authentic relationships and meaningful connections' },
+        ],
+        team: [
+          { name: 'Pastor David', role: 'Senior Pastor', bio: `Pastor David leads our congregation with wisdom and compassion, bringing over 15 years of ministry experience and a heart for serving others.` },
+          { name: 'Pastor Sarah', role: 'Associate Pastor', bio: `Pastor Sarah oversees our community outreach and small groups, with a passion for helping people connect and grow in their faith.` },
+          { name: 'Pastor Mike', role: 'Youth Pastor', bio: `Pastor Mike leads our youth ministry with energy and authenticity, creating a space where young people can thrive in their faith.` },
+        ],
+        timeline: [
+          { year: year, title: 'Church Founded', description: `${name} was established with a vision to serve our community and share God's love.` },
+          { year: String(parseInt(year) + 3), title: 'Growing Community', description: 'Our congregation grew, and we expanded our ministries to serve more families.' },
+          { year: String(parseInt(year) + 6), title: 'Community Impact', description: 'Launched major outreach programs serving thousands in our local community.' },
+          { year: 'Today', title: 'Continuing the Mission', description: 'Still growing, still serving, still welcoming everyone who seeks a spiritual home.' },
+        ],
+        stats: [
+          { value: '500', label: 'Church Family', suffix: '+' },
+          { value: String(new Date().getFullYear() - parseInt(year)), label: 'Years of Ministry', suffix: '+' },
+          { value: '20', label: 'Ministries', suffix: '+' },
+          { value: '1000', label: 'Lives Touched', suffix: '+' },
+        ],
+      },
+      services: {
+        headline: 'Our Ministries',
+        intro: `At ${name}, we offer various ministries designed to help you grow in faith, connect with others, and serve our community. There's a place for everyone here.`,
+        services: [
+          {
+            title: 'Worship Services',
+            description: `Join us for uplifting worship experiences that combine contemporary music, relevant teaching, and genuine community. Our services are designed to help you connect with God and others.`,
+            features: ['Contemporary Worship', 'Biblical Teaching', 'Prayer Ministry', 'Communion']
+          },
+          {
+            title: 'Children\'s Ministry',
+            description: `Kids are important to us! Our children's programs provide a safe, fun environment where kids can learn about God's love through age-appropriate activities, stories, and friendships.`,
+            features: ['Nursery Care', 'Kids Church', 'Vacation Bible School', 'Family Events']
+          },
+          {
+            title: 'Youth Ministry',
+            description: `Our youth ministry creates a place where teenagers can belong, believe, and become who God created them to be through relevant teaching, fun activities, and meaningful relationships.`,
+            features: ['Wednesday Nights', 'Youth Groups', 'Summer Camps', 'Service Projects']
+          },
+          {
+            title: 'Small Groups',
+            description: `Small groups are where life change happens. Connect with others in a smaller setting for Bible study, prayer, support, and authentic community throughout the week.`,
+            features: ['Bible Studies', 'Life Groups', 'Prayer Groups', 'Support Groups']
+          },
+        ],
+        process: [
+          { step: 1, title: 'Visit Us', description: 'Join us for a Sunday service and experience our welcoming community.' },
+          { step: 2, title: 'Connect', description: 'Meet our team, ask questions, and learn about opportunities to get involved.' },
+          { step: 3, title: 'Grow', description: 'Join a small group or ministry to deepen your faith and relationships.' },
+          { step: 4, title: 'Serve', description: 'Discover your gifts and use them to make a difference in our church and community.' },
+        ],
+      },
+      contact: {
+        headline: 'Plan Your Visit',
+        intro: `We'd love to connect with you! Whether you have questions about our church, want to plan a visit, or need prayer, our team is here to help.`,
+        formIntro: 'Send us a message and we\'ll get back to you soon.',
+      },
+      faq: {
+        headline: 'Common Questions',
+        intro: `Have questions about ${name}? Here are answers to some common questions. Feel free to reach out if you need more information.`,
+        questions: [
+          { question: 'What time are your worship services?', answer: `We hold worship services on Sundays. Please contact us or check our website for current service times. We also have mid-week services and activities for all ages.` },
+          { question: 'What should I expect when I visit?', answer: `When you arrive, you'll be greeted by friendly volunteers who can help you find your way. Our services typically last about an hour and include worship music, prayer, and a message. Come as you are—there's no dress code!` },
+          { question: 'Is there childcare available?', answer: `Yes! We have excellent children's programs for all ages during our services. Our trained volunteers create a safe, fun environment where kids can learn about God's love.` },
+          { question: 'How can I get involved?', answer: `There are many ways to get involved at ${name}! You can join a small group, serve on a ministry team, participate in outreach, or attend our events. Our team can help you find the right fit.` },
+          { question: 'Do I need to be a member to attend?', answer: `Not at all! Everyone is welcome at ${name}, whether you're exploring faith for the first time or looking for a new church home. We'd love to meet you!` },
+          { question: 'How can I request prayer?', answer: `We believe in the power of prayer. You can submit a prayer request through our contact form, speak with our prayer team after services, or call our church office. We're here to pray with and for you.` },
+        ],
+      },
+      seo: {
+        homeTitle: `${name} | A Welcoming Church Community`,
+        homeDescription: `${name} is a welcoming church where everyone belongs. Join us for inspiring worship, meaningful community, and opportunities to grow in faith.`,
+        aboutTitle: `About Our Church | ${name}`,
+        aboutDescription: `Learn about ${name}'s story, mission, and the passionate team dedicated to serving our community. Serving with faith since ${year}.`,
+        servicesTitle: `Our Ministries | ${name}`,
+        servicesDescription: `Explore ${name}'s ministries including worship services, children's programs, youth ministry, and small groups. There's a place for everyone.`,
+        contactTitle: `Plan Your Visit | ${name}`,
+        contactDescription: `Contact ${name} or plan your first visit. Call ${settings.contactPhone} or email ${settings.contactEmail}. We'd love to meet you!`,
+        faqTitle: `FAQ | ${name}`,
+        faqDescription: `Common questions about ${name}. Learn about service times, what to expect, and how to get involved in our church community.`,
+      },
+    };
+  }
+
   private async buildHomePage(settings: SiteSettings, content: AIGeneratedContent): Promise<Page> {
-    const ctaText = settings.primaryCta === 'call' ? 'Call Us Today' : settings.primaryCta === 'book' ? 'Book Now' : 'Get a Quote';
+    // Industry-specific CTA text
+    const industry = settings.industry.toLowerCase();
+    const isChurch = industry.includes('church') || industry.includes('religious') || industry.includes('faith') || industry.includes('ministry');
+
+    let ctaText: string;
+    if (isChurch) {
+      ctaText = settings.primaryCta === 'call' ? 'Call Us' : settings.primaryCta === 'book' ? 'Plan Your Visit' : 'Join Us This Sunday';
+    } else {
+      ctaText = settings.primaryCta === 'call' ? 'Call Us Today' : settings.primaryCta === 'book' ? 'Book Now' : 'Get a Quote';
+    }
 
     // Fetch images
     const heroImage = await this.imagesService.getImage(settings.industry, 'hero', 0);

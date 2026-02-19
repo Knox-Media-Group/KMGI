@@ -29,6 +29,9 @@ const INDUSTRY_SEARCH_TERMS: Record<string, string[]> = {
   'Beauty': ['beauty salon', 'spa treatment', 'cosmetics', 'skincare products'],
   'Construction': ['construction site', 'building architecture', 'contractor work', 'home renovation'],
   'Automotive': ['car showroom', 'auto repair', 'luxury vehicles', 'mechanic workshop'],
+  'Church': ['church interior stained glass', 'worship congregation', 'church community gathering', 'prayer hands'],
+  'Religious': ['church sanctuary', 'worship service', 'faith community', 'spiritual gathering'],
+  'Nonprofit': ['community volunteers', 'charity helping', 'community outreach', 'nonprofit team'],
   'Other': ['professional business', 'modern office', 'team collaboration', 'business success'],
 };
 
@@ -344,6 +347,26 @@ export class ImagesService {
         about: 'https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800&h=600&fit=crop',
         services: 'https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=600&h=400&fit=crop',
         default: 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop',
+      },
+      'Church': {
+        hero: 'https://images.unsplash.com/photo-1438032005730-c779502df39b?w=1200&h=600&fit=crop',
+        about: 'https://images.unsplash.com/photo-1478147427282-58a87a120781?w=800&h=600&fit=crop',
+        services: 'https://images.unsplash.com/photo-1519491050282-cf00c82424cc?w=600&h=400&fit=crop',
+        team: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=600&h=400&fit=crop',
+        default: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&h=600&fit=crop',
+      },
+      'Religious': {
+        hero: 'https://images.unsplash.com/photo-1438032005730-c779502df39b?w=1200&h=600&fit=crop',
+        about: 'https://images.unsplash.com/photo-1478147427282-58a87a120781?w=800&h=600&fit=crop',
+        services: 'https://images.unsplash.com/photo-1519491050282-cf00c82424cc?w=600&h=400&fit=crop',
+        team: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?w=600&h=400&fit=crop',
+        default: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&h=600&fit=crop',
+      },
+      'Nonprofit': {
+        hero: 'https://images.unsplash.com/photo-1559027615-cd4628902d4a?w=1200&h=600&fit=crop',
+        about: 'https://images.unsplash.com/photo-1593113598332-cd288d649433?w=800&h=600&fit=crop',
+        services: 'https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=600&h=400&fit=crop',
+        default: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&h=600&fit=crop',
       },
       'default': {
         hero: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&h=600&fit=crop',
