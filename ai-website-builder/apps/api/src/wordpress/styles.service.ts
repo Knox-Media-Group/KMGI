@@ -408,95 +408,47 @@ a:hover {
 }
 
 /* =================================================================
-   HERO SECTION - Premium Design with Gradient Mesh
+   HERO SECTION - Full-bleed Image with Dark Overlay
    ================================================================= */
 .section-hero {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--background);
+  background: #0a0a1a;
   position: relative;
   overflow: hidden;
   padding: var(--space-2xl) var(--space-md);
   padding-top: calc(var(--space-2xl) + 80px);
 }
 
-/* Gradient mesh background */
-.section-hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--gradient-mesh);
-  z-index: 0;
-}
-
-/* Animated aurora blobs */
-.hero-overlay {
+/* Hero background image - FULL BLEED VIVID */
+.section-hero > .wp-block-image,
+.section-hero > .wp-block-image figure {
   position: absolute;
   inset: 0;
   z-index: 1;
-  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
 }
 
-.hero-overlay::before {
-  content: '';
+.section-hero > .wp-block-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Dark gradient overlay on hero image for text readability */
+.hero-overlay {
   position: absolute;
-  width: 800px;
-  height: 800px;
-  top: -300px;
-  right: -200px;
-  background: radial-gradient(circle, rgba(${accentRGB}, 0.3) 0%, rgba(${accentRGB}, 0.1) 40%, transparent 70%);
-  border-radius: 50%;
-  filter: blur(60px);
-  animation: auroraFloat1 20s ease-in-out infinite;
-}
-
-.hero-overlay::after {
-  content: '';
-  position: absolute;
-  width: 600px;
-  height: 600px;
-  bottom: -200px;
-  left: -150px;
-  background: radial-gradient(circle, rgba(124, 58, 237, 0.25) 0%, rgba(99, 102, 241, 0.1) 40%, transparent 70%);
-  border-radius: 50%;
-  filter: blur(50px);
-  animation: auroraFloat2 25s ease-in-out infinite;
-}
-
-@keyframes auroraFloat1 {
-  0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
-  25% { transform: translate(-80px, 60px) scale(1.15) rotate(5deg); }
-  50% { transform: translate(40px, -40px) scale(0.95) rotate(-3deg); }
-  75% { transform: translate(60px, 80px) scale(1.1) rotate(3deg); }
-}
-
-@keyframes auroraFloat2 {
-  0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
-  33% { transform: translate(100px, -80px) scale(1.2) rotate(-5deg); }
-  66% { transform: translate(-60px, 40px) scale(0.9) rotate(5deg); }
-}
-
-/* Third floating orb */
-.section-hero > .section-container::before {
-  content: '';
-  position: absolute;
-  width: 400px;
-  height: 400px;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(circle, rgba(${accentRGB}, 0.08) 0%, transparent 60%);
-  border-radius: 50%;
-  filter: blur(40px);
-  animation: pulseGlow 8s ease-in-out infinite;
-  z-index: -1;
-}
-
-@keyframes pulseGlow {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
-  50% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.8; }
+  inset: 0;
+  z-index: 2;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.35) 40%, rgba(0, 0, 0, 0.6) 100%),
+    linear-gradient(135deg, rgba(${accentRGB}, 0.2) 0%, transparent 60%);
 }
 
 .section-hero .section-container {
@@ -509,64 +461,65 @@ a:hover {
 
 .hero-content {
   flex: 1;
-  text-align: left;
+  text-align: center;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
-/* Premium glassmorphism badge */
+/* Badge on dark background */
 .hero-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.625rem 1.5rem;
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--glass-border);
+  padding: 0.5rem 1.5rem;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 100px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--accent-color);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   margin-bottom: var(--space-md);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   animation: slideInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
 }
 
-.hero-badge::before {
-  content: '';
-  width: 8px;
-  height: 8px;
-  background: var(--gradient);
-  border-radius: 50%;
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.2); opacity: 0.7; }
-}
-
+/* Hero heading - white text on dark overlay */
 .section-hero h1 {
-  font-size: clamp(3rem, 7vw, 5rem);
-  max-width: 800px;
-  margin-bottom: 1.5rem;
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  max-width: 900px;
+  margin: 0 auto 1.5rem;
   position: relative;
-  line-height: 1.05;
-  letter-spacing: -0.04em;
-  font-weight: 800;
-  background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-primary) 50%, var(--accent-color) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
+  background: none;
+  text-shadow: 0 2px 40px rgba(0, 0, 0, 0.3);
   animation: slideInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+}
+
+.section-hero h2 {
+  font-size: clamp(1.5rem, 3vw, 2.5rem);
+  color: rgba(255, 255, 255, 0.9);
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.9);
+  background: none;
+  font-weight: 400;
+  margin-bottom: 1rem;
+  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.3);
 }
 
 .section-hero .lead,
 .section-hero p:not(.has-small-font-size) {
-  font-size: clamp(1.125rem, 1.8vw, 1.375rem);
-  max-width: 580px;
-  margin: 0 0 2.5rem;
-  color: var(--text-secondary);
-  line-height: 1.75;
+  font-size: clamp(1.1rem, 1.8vw, 1.35rem);
+  max-width: 650px;
+  margin: 0 auto 2.5rem;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.7;
+  text-shadow: 0 1px 20px rgba(0, 0, 0, 0.2);
   animation: slideInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
 }
 
@@ -574,6 +527,7 @@ a:hover {
   display: flex;
   gap: var(--space-sm);
   flex-wrap: wrap;
+  justify-content: center;
   animation: slideInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
 }
 
@@ -581,77 +535,31 @@ a:hover {
   margin: 0;
 }
 
-/* Premium hero visual with glassmorphism frame */
+/* Hero visual (second image) - displayed as floating card */
 .hero-visual {
   flex: 1;
   position: relative;
-  animation: slideInRight 1s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
+  animation: slideInUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
 }
 
 .hero-visual .wp-block-image {
   position: relative;
-  border-radius: var(--border-radius-xl);
+  border-radius: var(--border-radius-lg);
   overflow: hidden;
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--glass-border);
-  padding: 12px;
   box-shadow:
-    0 40px 100px rgba(0, 0, 0, 0.15),
-    0 0 0 1px rgba(255, 255, 255, 0.1),
-    var(--shadow-glow);
-}
-
-.hero-visual .wp-block-image::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%);
-  border-radius: inherit;
-  pointer-events: none;
+    0 30px 60px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
 .hero-visual .wp-block-image img {
   width: 100%;
   height: auto;
   display: block;
-  border-radius: calc(var(--border-radius-xl) - 12px);
   transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .hero-visual .wp-block-image:hover img {
-  transform: scale(1.05);
-}
-
-/* Floating accent shape behind hero image */
-.hero-visual::before {
-  content: '';
-  position: absolute;
-  width: 80%;
-  height: 80%;
-  bottom: -30px;
-  right: -30px;
-  background: var(--gradient);
-  opacity: 0.15;
-  border-radius: var(--border-radius-xl);
-  z-index: -1;
-  filter: blur(20px);
-}
-
-/* Hero background image (first image = background) */
-.section-hero > .wp-block-image {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  opacity: 0.05;
-}
-
-.section-hero > .wp-block-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  filter: blur(2px);
+  transform: scale(1.03);
 }
 
 @media (max-width: 968px) {
@@ -676,41 +584,21 @@ a:hover {
 }
 
 /* =================================================================
-   FEATURES SECTION - Premium Glassmorphism Cards
+   FEATURES SECTION - White Elevated Cards
    ================================================================= */
 .section-features {
   background: var(--surface);
   padding: var(--space-xl) var(--space-md);
   position: relative;
-  overflow: hidden;
-}
-
-/* Gradient mesh overlay */
-.section-features::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse at 0% 0%, rgba(${accentRGB}, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 100% 100%, rgba(124, 58, 237, 0.06) 0%, transparent 50%);
-  pointer-events: none;
 }
 
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: var(--space-md);
-}
-
-.features-grid .wp-block-list {
-  display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: var(--space-md);
-  list-style: none;
-  padding: 0;
-  margin: 0;
 }
 
+.features-grid .wp-block-list,
 .section-features .wp-block-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -720,179 +608,119 @@ a:hover {
   margin: 0;
 }
 
-/* Premium glassmorphism feature cards */
+/* Elevated white cards */
 .section-features .wp-block-list li,
 .features-grid .wp-block-list li {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  padding: var(--space-lg);
-  border-radius: var(--border-radius-xl);
+  background: #ffffff;
+  padding: var(--space-lg) var(--space-md);
+  border-radius: var(--border-radius-lg);
   text-align: center;
   transition: all var(--transition-normal);
-  border: 1px solid var(--glass-border);
+  border: none;
   position: relative;
   overflow: hidden;
-  box-shadow: var(--shadow-card);
-}
-
-/* Gradient shine overlay on cards */
-.section-features .wp-block-list li::after,
-.features-grid .wp-block-list li::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  transition: left 0.5s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .section-features .wp-block-list li:hover,
 .features-grid .wp-block-list li:hover {
-  transform: translateY(-12px) scale(1.02);
-  box-shadow: var(--shadow-card-hover), var(--shadow-glow);
-  border-color: rgba(${accentRGB}, 0.3);
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06);
 }
 
-.section-features .wp-block-list li:hover::after,
-.features-grid .wp-block-list li:hover::after {
-  left: 100%;
-}
-
-/* Premium icon container */
+/* Colored accent bar at top of card */
 .section-features .wp-block-list li::before,
 .features-grid .wp-block-list li::before {
   content: '';
-  display: block;
-  width: 72px;
-  height: 72px;
-  margin: 0 auto var(--space-md);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
   background: var(--gradient);
-  border-radius: 20px;
-  box-shadow: 0 8px 24px rgba(${accentRGB}, 0.3);
+}
+
+/* Icon placeholder */
+.section-features .wp-block-list li::after,
+.features-grid .wp-block-list li::after {
+  content: '';
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin: var(--space-sm) auto var(--space-md);
+  background: rgba(${accentRGB}, 0.1);
+  border-radius: 50%;
   position: relative;
-  z-index: 1;
 }
 
 .section-features .wp-block-list li strong,
 .features-grid .wp-block-list li strong {
   display: block;
-  font-size: 1.35rem;
+  font-size: 1.3rem;
   margin-bottom: var(--space-sm);
   color: var(--text-primary);
   font-weight: var(--heading-weight);
 }
 
 /* =================================================================
-   SERVICES SECTION - Premium Card Design
+   SERVICES SECTION - Clean Elevated Cards
    ================================================================= */
 .section-services {
   background: var(--background);
   padding: var(--space-xl) var(--space-md);
   position: relative;
-  overflow: hidden;
-}
-
-/* Gradient mesh background */
-.section-services::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse at 100% 0%, rgba(${accentRGB}, 0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 0% 100%, rgba(124, 58, 237, 0.05) 0%, transparent 50%);
-  pointer-events: none;
 }
 
 .services-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: var(--space-md);
 }
 
-.services-grid .wp-block-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-  gap: var(--space-md);
-  list-style: none;
-  padding: 0;
-}
-
+.services-grid .wp-block-list,
 .section-services .wp-block-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: var(--space-md);
   list-style: none;
   padding: 0;
 }
 
-/* Premium service cards with glassmorphism */
+/* Clean white elevated cards */
 .section-services .wp-block-list li,
 .services-grid .wp-block-list li {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
+  background: #ffffff;
   padding: var(--space-lg);
-  border-radius: var(--border-radius-xl);
-  box-shadow: var(--shadow-card);
+  border-radius: var(--border-radius-lg);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: all var(--transition-normal);
-  border: 1px solid var(--glass-border);
+  border: none;
   position: relative;
   overflow: hidden;
 }
 
-/* Gradient top accent bar */
+/* Left accent bar */
 .section-services .wp-block-list li::before,
 .services-grid .wp-block-list li::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 4px;
+  width: 4px;
+  height: 100%;
   background: var(--gradient);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform var(--transition-normal);
-}
-
-/* Glow effect on hover */
-.section-services .wp-block-list li::after,
-.services-grid .wp-block-list li::after {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  background: var(--gradient);
-  border-radius: inherit;
-  opacity: 0;
-  z-index: -1;
-  filter: blur(20px);
-  transition: opacity var(--transition-normal);
 }
 
 .section-services .wp-block-list li:hover,
 .services-grid .wp-block-list li:hover {
-  transform: translateY(-12px);
-  box-shadow: var(--shadow-xl), var(--shadow-glow);
-  border-color: rgba(${accentRGB}, 0.3);
-}
-
-.section-services .wp-block-list li:hover::before,
-.services-grid .wp-block-list li:hover::before {
-  transform: scaleX(1);
-}
-
-.section-services .wp-block-list li:hover::after,
-.services-grid .wp-block-list li:hover::after {
-  opacity: 0.15;
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.06);
 }
 
 .section-services .wp-block-list li strong,
 .services-grid .wp-block-list li strong {
   display: block;
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   margin-bottom: var(--space-sm);
   color: var(--text-primary);
   font-weight: var(--heading-weight);
@@ -939,20 +767,22 @@ a:hover {
   padding: 0;
 }
 
+/* White elevated testimonial cards */
 .section-testimonials .wp-block-list li,
 .testimonials-grid .wp-block-list li {
-  background: var(--surface-elevated);
+  background: #ffffff;
   padding: var(--space-lg);
   border-radius: var(--border-radius-lg);
   position: relative;
-  border: 1px solid var(--border-color);
+  border: none;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: all var(--transition-normal);
 }
 
 .section-testimonials .wp-block-list li:hover,
 .testimonials-grid .wp-block-list li:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06);
 }
 
 .section-testimonials .wp-block-list li::before,
@@ -1042,15 +872,16 @@ a:hover {
   transform: scale(1.03);
 }
 
+/* Colored accent shape behind image */
 .about-image-accent {
   position: absolute;
-  bottom: -20px;
-  right: -20px;
-  width: 60%;
-  height: 60%;
-  background: var(--gradient);
+  bottom: -16px;
+  right: -16px;
+  width: 100%;
+  height: 100%;
+  background: var(--accent-color);
   border-radius: var(--border-radius-lg);
-  opacity: 0.15;
+  opacity: 0.12;
   z-index: 1;
 }
 
@@ -1131,18 +962,20 @@ a:hover {
   gap: var(--space-md);
 }
 
+/* White elevated team cards */
 .section-team .team-member {
-  background: var(--surface-elevated);
+  background: #ffffff;
   border-radius: var(--border-radius-lg);
   overflow: hidden;
   text-align: center;
   transition: all var(--transition-normal);
-  border: 1px solid var(--border-color);
+  border: none;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .section-team .team-member:hover {
   transform: translateY(-8px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.06);
 }
 
 .section-team .team-member img {
@@ -1619,39 +1452,54 @@ a:hover {
 }
 
 /* =================================================================
-   CTA SECTION
+   CTA SECTION - Dark immersive with accent color
    ================================================================= */
 .section-cta {
-  background: var(--gradient-dark);
+  background: #0a0a1a;
   padding: var(--space-2xl) var(--space-md);
   text-align: center;
   position: relative;
   overflow: hidden;
 }
 
+/* Background image support for CTA */
+.section-cta > .wp-block-image {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.section-cta > .wp-block-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .cta-pattern {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 30% 50%, rgba(${accentRGB}, 0.25) 0%, transparent 50%),
-              radial-gradient(ellipse at 70% 50%, rgba(${accentRGB}, 0.15) 0%, transparent 50%);
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.4) 50%, rgba(0, 0, 0, 0.7) 100%),
+    linear-gradient(135deg, rgba(${accentRGB}, 0.3) 0%, transparent 60%);
   z-index: 1;
 }
 
 .cta-content {
   position: relative;
   z-index: 2;
-  max-width: 700px;
+  max-width: 750px;
   margin: 0 auto;
 }
 
 .section-cta h2 {
   color: white;
-  font-size: clamp(2rem, 4vw, 3rem);
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.3);
 }
 
 .section-cta p,
 .section-cta .lead {
-  color: rgba(255,255,255,0.85);
+  color: rgba(255, 255, 255, 0.85);
   max-width: 600px;
   margin: 0 auto var(--space-md);
   font-size: 1.2rem;
@@ -1666,15 +1514,15 @@ a:hover {
 }
 
 .section-cta .wp-block-button__link {
-  background: white;
-  color: var(--accent-color) !important;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  background: var(--accent-color);
+  color: white !important;
+  box-shadow: 0 4px 20px rgba(${accentRGB}, 0.4);
 }
 
 .section-cta .wp-block-button__link:hover {
-  background: var(--surface);
+  background: var(--accent-dark);
   transform: translateY(-3px);
-  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  box-shadow: 0 8px 30px rgba(${accentRGB}, 0.5);
 }
 
 /* =================================================================
@@ -1756,28 +1604,32 @@ a:hover {
   gap: var(--space-md);
 }
 
+/* White elevated product/pricing cards */
 .section-products .product-card,
 .section-pricing .pricing-card {
-  background: var(--surface-elevated);
+  background: #ffffff;
   border-radius: var(--border-radius-lg);
   overflow: hidden;
   transition: all var(--transition-normal);
-  border: 1px solid var(--border-color);
+  border: none;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .section-products .product-card:hover,
 .section-pricing .pricing-card:hover {
   transform: translateY(-8px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.06);
 }
 
 .section-pricing .pricing-card.featured {
   border: 2px solid var(--accent-color);
   transform: scale(1.05);
+  box-shadow: 0 8px 30px rgba(${accentRGB}, 0.2);
 }
 
 .section-pricing .pricing-card.featured:hover {
   transform: scale(1.05) translateY(-8px);
+  box-shadow: 0 25px 50px rgba(${accentRGB}, 0.25);
 }
 
 .section-products .product-image {

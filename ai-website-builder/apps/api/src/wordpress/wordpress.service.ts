@@ -606,14 +606,23 @@ export class WordPressService {
       ? `<div class="hero-buttons">${buttons.join('\n')}</div>`
       : '';
 
+    // Use smaller headings as badge text, main heading stays
+    let badgeHtml = '';
+    let mainHeadings = headings;
+    if (headings.length > 1) {
+      // Use first smaller heading as badge
+      badgeHtml = `<div class="hero-badge"><span>${headings[0].replace(/<[^>]+>/g, '').trim()}</span></div>`;
+      mainHeadings = headings.slice(1);
+    }
+
     return `<!-- wp:group {"className":"${classes}"} -->
 <div class="wp-block-group ${classes}">
 ${bgImage}
 <div class="hero-overlay"></div>
 <div class="section-container">
 <div class="hero-content">
-<div class="hero-badge"><span>Welcome</span></div>
-${headings.join('\n')}
+${badgeHtml}
+${mainHeadings.join('\n')}
 ${paragraphs.join('\n')}
 ${buttonGroup}
 </div>
