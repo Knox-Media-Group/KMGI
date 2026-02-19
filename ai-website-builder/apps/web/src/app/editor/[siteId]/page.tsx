@@ -1281,12 +1281,24 @@ function SectionBlocksRenderer({
   const hoursBlocks = section.blocks.filter(b => b.type === 'hours');
   const timelineBlocks = section.blocks.filter(b => b.type === 'timelineItem');
 
+  // For hero sections, hide image blocks (used as background) and center content
+  const isHero = section.type === 'hero';
+  const isCta = section.type === 'cta';
+  const blocksToRender = isHero
+    ? section.blocks.filter(b => b.type !== 'image')
+    : section.blocks;
+
   return (
-    <div className="space-y-4">
-      {/* Render heading/body text blocks */}
-      {section.blocks.map(block => {
+    <div className={`space-y-4 ${isHero || isCta ? 'text-center' : ''}`}>
+      {/* Render blocks */}
+      {blocksToRender.map(block => {
         const bStyle = blockStyles[`${section.id}-${block.id}`] || {};
         const isBlockSelected = selectedBlockId === block.id;
+
+        // Override text color for hero/cta sections
+        const heroStyle = (isHero || isCta) && block.type === 'text'
+          ? { color: 'inherit' }
+          : {};
 
         return (
           <div
@@ -1296,6 +1308,7 @@ function SectionBlocksRenderer({
               e.stopPropagation();
               onSelectBlock(block.id);
             }}
+            style={heroStyle}
           >
             <CanvasBlockRenderer
               block={block}
@@ -1303,7 +1316,7 @@ function SectionBlocksRenderer({
               section={section}
               accentColor={accentColor}
               globalStyles={globalStyles}
-              blockStyle={bStyle}
+              blockStyle={{ ...bStyle, ...(isHero || isCta ? { textColor: '#ffffff' } : {}) }}
               onChange={onBlockChange}
               onBlur={onBlockBlur}
             />
@@ -2568,16 +2581,31 @@ function getSectionBackground(section: Section, accent: string, gs: GlobalStyles
     return { backgroundColor: bg };
   }
 
+  // For hero sections, find first image and use as background
+  if (section.type === 'hero') {
+    const heroImage = section.blocks.find(b => b.type === 'image');
+    if (heroImage && (heroImage.props as ImageProps).src) {
+      return {
+        backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0.6)), url(${(heroImage.props as ImageProps).src})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        color: '#ffffff',
+        minHeight: '500px',
+      };
+    }
+    return { backgroundColor: '#0a1628', color: '#ffffff', minHeight: '500px' };
+  }
+
   // Default backgrounds by section type
   switch (section.type) {
-    case 'hero':
-      return { background: `linear-gradient(135deg, ${accent}08 0%, ${accent}03 100%)` };
     case 'cta':
       return { background: `linear-gradient(135deg, ${accent} 0%, ${accent}dd 100%)`, color: '#ffffff' };
     case 'stats':
       return { backgroundColor: '#f9fafb' };
     case 'testimonials':
       return { backgroundColor: '#fafafa' };
+    case 'services':
+      return { background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)' };
     case 'footer':
       return { backgroundColor: '#111827', color: '#9ca3af' };
     default:
