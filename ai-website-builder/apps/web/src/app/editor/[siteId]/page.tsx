@@ -2590,10 +2590,13 @@ function getSectionBackground(section: Section, accent: string, gs: GlobalStyles
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         color: '#ffffff',
-        minHeight: '500px',
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       };
     }
-    return { backgroundColor: '#0a1628', color: '#ffffff', minHeight: '500px' };
+    return { backgroundColor: '#0a1628', color: '#ffffff', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' };
   }
 
   // Default backgrounds by section type
