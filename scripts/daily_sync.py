@@ -80,8 +80,13 @@ def run_sync(config: Config, upload: bool = True, notify: bool = True) -> bool:
             if result.feed_path:
                 logger.info("Deploying feed to GitHub Pages...")
                 try:
-                    from deploy_feed import deploy_to_gh_pages
-                    deploy_to_gh_pages(result.feed_path)
+                    # Import from scripts directory regardless of CWD
+                    import importlib.util
+                    deploy_path = Path(__file__).parent / "deploy_feed.py"
+                    spec = importlib.util.spec_from_file_location("deploy_feed", deploy_path)
+                    deploy_mod = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(deploy_mod)
+                    deploy_mod.deploy_to_gh_pages(result.feed_path)
                 except Exception as e:
                     logger.error(f"Failed to deploy to GitHub Pages: {e}")
 

@@ -3,7 +3,7 @@ Data models for Vimeo and Roku video content.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 from enum import Enum
 import json
@@ -171,14 +171,14 @@ class Video:
 
     @staticmethod
     def _parse_datetime(date_str: Optional[str]) -> datetime:
-        """Parse ISO format datetime string."""
+        """Parse ISO format datetime string. Always returns UTC-aware datetime."""
         if not date_str:
-            return datetime.now()
+            return datetime.now(timezone.utc)
         try:
             # Handle Vimeo's ISO format
             return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
         except (ValueError, AttributeError):
-            return datetime.now()
+            return datetime.now(timezone.utc)
 
     def get_best_thumbnail(self, min_width: int = 1280) -> Optional[Thumbnail]:
         """Get the best thumbnail at or above the minimum width.

@@ -113,11 +113,32 @@ class VimeoClient:
                         status_code=response.status_code
                     )
 
+                # Retry on 5xx server errors (intermittent gateway/server failures)
+                if response.status_code >= 500:
+                    if attempt < retry_count - 1:
+                        wait_time = 2 ** attempt
+                        logger.warning(
+                            f"Server error {response.status_code}, "
+                            f"retrying in {wait_time}s..."
+                        )
+                        time.sleep(wait_time)
+                        continue
+                    raise VimeoAPIError(
+                        f"Server error after {retry_count} attempts: {response.status_code}",
+                        status_code=response.status_code
+                    )
+
                 if response.status_code >= 400:
+                    # Safely parse response body — may be HTML, not JSON
+                    response_body = None
+                    try:
+                        response_body = response.json() if response.text else None
+                    except (ValueError, requests.exceptions.JSONDecodeError):
+                        pass
                     raise VimeoAPIError(
                         f"API request failed: {response.text}",
                         status_code=response.status_code,
-                        response=response.json() if response.text else None
+                        response=response_body
                     )
 
                 return response.json() if response.text else {}
@@ -243,6 +264,7 @@ class VimeoClient:
 
         # Fetch remaining pages concurrently
         remaining_pages = list(range(2, total_pages + 1))
+        failed_pages = []
 
         with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
             future_to_page = {
@@ -265,7 +287,14 @@ class VimeoClient:
                         on_progress(completed, total_pages)
                 except Exception as e:
                     logger.error(f"Failed to fetch page {page_num}: {e}")
+                    failed_pages.append(page_num)
                     all_video_data[page_num] = []
+
+        if failed_pages:
+            logger.warning(
+                f"Failed to fetch {len(failed_pages)}/{total_pages} pages: "
+                f"{sorted(failed_pages)}. Feed may be incomplete."
+            )
 
         # Combine results in page order
         videos = []
@@ -357,6 +386,7 @@ class VimeoClient:
 
         if total_pages > 1:
             remaining = list(range(2, total_pages + 1))
+            failed_pages = []
             with ThreadPoolExecutor(max_workers=self._max_workers) as executor:
                 future_to_page = {
                     executor.submit(self._fetch_page, endpoint, p, 100): p
@@ -369,6 +399,13 @@ class VimeoClient:
                         all_video_data[page_num] = result.get("data", [])
                     except Exception as e:
                         logger.error(f"Failed to fetch album page {page_num}: {e}")
+                        failed_pages.append(page_num)
+
+            if failed_pages:
+                logger.warning(
+                    f"Failed to fetch {len(failed_pages)}/{total_pages} album pages: "
+                    f"{sorted(failed_pages)}. Feed may be incomplete."
+                )
 
         videos = []
         for page_num in sorted(all_video_data.keys()):

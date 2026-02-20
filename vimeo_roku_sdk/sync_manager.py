@@ -98,12 +98,12 @@ class VideoCache:
             return True
         return cached.get("hash") != self._video_hash(video)
 
-    def update(self, video: Video, roku_video_dict: Dict[str, Any]):
+    def update(self, video: Video, roku_video_dict: Dict[str, Any], short_form_max_duration: int = 900):
         """Update cache entry for a video."""
         self._data[video.id] = {
             "hash": self._video_hash(video),
             "roku_data": roku_video_dict,
-            "video_type": "short_form" if video.duration < 900 else "movie",
+            "video_type": "short_form" if video.duration < short_form_max_duration else "movie",
             "cached_at": datetime.now().isoformat()
         }
 
@@ -364,11 +364,14 @@ class SyncManager:
                     roku_video = RokuVideo.from_video(video, video_type)
                     self.feed_generator.add_video(video, video_type)
 
+                    # Check if this is an update vs new BEFORE updating cache
+                    is_update = self._cache and self._cache.get_cached_roku_data(video.id) is not None
+
                     # Update cache
                     if self._cache:
-                        self._cache.update(video, roku_video.to_dict())
+                        self._cache.update(video, roku_video.to_dict(), self.config.sync.short_form_max_duration)
 
-                    if self._cache and self._cache.get_cached_roku_data(video.id):
+                    if is_update:
                         result.videos_updated += 1
                     else:
                         result.videos_added += 1

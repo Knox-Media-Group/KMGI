@@ -40,12 +40,19 @@ export default {
 
       const data = await vimeoResp.json();
 
-      // Find HLS file from play representation
+      // Find HLS URL — Vimeo serves HLS under data.play.hls, not data.files
       let hlsUrl = null;
 
-      // Check files for HLS
-      if (data.files) {
-        const hlsFile = data.files.find(f => f.quality === 'hls');
+      // Primary: check play.hls (where Vimeo actually puts HLS streams)
+      if (data.play && data.play.hls && data.play.hls.link) {
+        hlsUrl = data.play.hls.link;
+      }
+
+      // Secondary: check files array for HLS entries
+      if (!hlsUrl && data.files) {
+        const hlsFile = data.files.find(f =>
+          f.quality === 'hls' || (f.type && f.type.includes('m3u8'))
+        );
         if (hlsFile) {
           hlsUrl = hlsFile.link;
         }

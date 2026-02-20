@@ -26,7 +26,7 @@ class VimeoRateLimitError(VimeoAPIError):
     """Rate limit exceeded on Vimeo API."""
 
     def __init__(self, message: str, retry_after: int = None):
-        super().__init__(message)
+        super().__init__(message, status_code=429)
         self.retry_after = retry_after
 
 
