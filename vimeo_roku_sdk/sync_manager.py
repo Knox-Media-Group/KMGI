@@ -82,8 +82,11 @@ class VideoCache:
                 self._data = {}
 
     def save(self):
-        with open(self._cache_file, "w") as f:
-            json.dump(self._data, f)
+        try:
+            with open(self._cache_file, "w") as f:
+                json.dump(self._data, f)
+        except OSError as e:
+            logger.error(f"Failed to save video cache (disk full?): {e}")
 
     @staticmethod
     def _video_hash(video: Video) -> str:
@@ -131,8 +134,11 @@ class VideoCache:
 
     def save_feed(self, feed_json: str):
         """Save a copy of the generated feed for fast rebuilds."""
-        with open(self._feed_cache_file, "w") as f:
-            f.write(feed_json)
+        try:
+            with open(self._feed_cache_file, "w") as f:
+                f.write(feed_json)
+        except OSError as e:
+            logger.error(f"Failed to save feed cache (disk full?): {e}")
 
     def get_cached_feed(self) -> Optional[str]:
         """Get the cached feed JSON."""
@@ -310,6 +316,7 @@ class SyncManager:
 
         try:
             state = self._load_state()
+            state.synced_video_ids = []
             self.feed_generator.reset()
 
             # Fetch videos (concurrent)
@@ -360,6 +367,8 @@ class SyncManager:
                             continue
 
                     # Process changed/new video
+                    is_existing = self._cache and self._cache.get_cached_roku_data(video.id) is not None
+
                     video_type = self._determine_video_type(video)
                     roku_video = RokuVideo.from_video(video, video_type)
                     self.feed_generator.add_video(video, video_type)
@@ -368,7 +377,7 @@ class SyncManager:
                     if self._cache:
                         self._cache.update(video, roku_video.to_dict())
 
-                    if self._cache and self._cache.get_cached_roku_data(video.id):
+                    if is_existing:
                         result.videos_updated += 1
                     else:
                         result.videos_added += 1

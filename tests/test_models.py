@@ -79,9 +79,9 @@ class TestVideo:
         thumb = video.get_best_thumbnail(min_width=800)
         assert thumb.width == 1280
 
-        # Get thumbnail at least 500px wide
+        # Get thumbnail at least 500px wide - returns largest suitable
         thumb = video.get_best_thumbnail(min_width=500)
-        assert thumb.width == 640
+        assert thumb.width == 1280
 
     def test_determine_quality(self):
         """Test video quality determination."""

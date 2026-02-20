@@ -20,8 +20,9 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-# Add parent directory to path for imports
+# Add parent directory and scripts directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent))
 
 from vimeo_roku_sdk import SyncManager, Config
 

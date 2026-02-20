@@ -114,10 +114,14 @@ class VimeoClient:
                     )
 
                 if response.status_code >= 400:
+                    try:
+                        error_body = response.json() if response.text else None
+                    except (ValueError, Exception):
+                        error_body = None
                     raise VimeoAPIError(
                         f"API request failed: {response.text}",
                         status_code=response.status_code,
-                        response=response.json() if response.text else None
+                        response=error_body
                     )
 
                 return response.json() if response.text else {}
